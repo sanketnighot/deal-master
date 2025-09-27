@@ -29,11 +29,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-pixel antialiased`}
+        style={{ backgroundColor: "rgb(28, 0, 51)", color: "rgb(0, 255, 255)" }}
       >
+        <div className="crt-overlay" />
         <Web3AuthWrapper>
           <AuthProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              <div
+                className="min-h-screen relative"
+                style={{ backgroundColor: "rgb(28, 0, 51)" }}
+              >
+                {children}
+              </div>
+            </ToastProvider>
           </AuthProvider>
         </Web3AuthWrapper>
       </body>
