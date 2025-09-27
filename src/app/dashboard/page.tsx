@@ -2,8 +2,8 @@
 
 import { TopBar } from "@/components/layout/TopBar";
 import { PYUSDPaymentModal } from "@/components/payment/PYUSDPaymentModal";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameApi } from "@/lib/api";
@@ -33,7 +33,8 @@ interface Game {
 }
 
 export default function Dashboard() {
-  const { isAuthenticated, isLoading, walletAddress, authenticatedFetch } = useAuth();
+  const { isAuthenticated, isLoading, walletAddress, authenticatedFetch } =
+    useAuth();
   const { createGame, getGames } = useGameApi();
   const router = useRouter();
   const { addToast } = useToast();
@@ -101,16 +102,15 @@ export default function Dashboard() {
     setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = async (txHash: string, walletAddress: string) => {
+  const handlePaymentSuccess = async (
+    txHash: string,
+    walletAddress: string
+  ) => {
     try {
       setCreatingGame(true);
       setShowPaymentModal(false);
 
-      const response = await createGame(
-        ENTRY_FEE_CENTS,
-        txHash,
-        walletAddress
-      );
+      const response = await createGame(ENTRY_FEE_CENTS, txHash, walletAddress);
 
       if (response.success) {
         addToast({
@@ -143,32 +143,18 @@ export default function Dashboard() {
     router.push(`/game/${gameId}`);
   };
 
-  const handleDebugUserId = async () => {
-    try {
-      const response = await authenticatedFetch(
-        `/api/debug/user-id?walletAddress=${walletAddress}`
-      );
-      const result = await response.json();
-      console.log("Debug User ID Result:", result);
-      addToast({
-        type: "info",
-        title: "Debug Info",
-        message: "Check console for debug information",
-      });
-    } catch (error) {
-      console.error("Debug error:", error);
-      addToast({
-        type: "error",
-        title: "Debug Failed",
-        message: "Check console for error details",
-      });
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "rgb(28, 0, 51)" }}
+      >
+        <div
+          className="animate-text-flicker font-pixel text-xl"
+          style={{ color: "rgb(0, 255, 255)" }}
+        >
+          LOADING...
+        </div>
       </div>
     );
   }
@@ -178,56 +164,97 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ backgroundColor: "rgb(28, 0, 51)" }}
+    >
+      {/* CRT Overlay */}
+      <div className="crt-overlay" />
+
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div
+          className="absolute top-10 left-10 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 0, 255)" }}
+        ></div>
+        <div
+          className="absolute top-32 right-20 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(0, 255, 255)" }}
+        ></div>
+        <div
+          className="absolute bottom-20 left-32 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 255, 0)" }}
+        ></div>
+        <div
+          className="absolute bottom-40 right-16 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 0, 255)" }}
+        ></div>
+      </div>
+
       <TopBar />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Games</h1>
-          <p className="text-gray-600">
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        <div className="mb-8 text-center">
+          <h1
+            className="text-4xl font-pixel mb-4 animate-glitch"
+            style={{ color: "rgb(255, 0, 255)" }}
+          >
+            YOUR GAMES
+          </h1>
+          <p
+            className="font-pixel text-sm"
+            style={{ color: "rgb(0, 255, 255)" }}
+          >
             Manage your Deal Master games and track your winnings
           </p>
         </div>
 
         {/* Create New Game */}
         <div className="mb-8">
-          <Card>
+          <Card variant="pixel">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Start a New Game
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3
+                    className="text-lg font-pixel mb-2"
+                    style={{ color: "rgb(255, 255, 0)" }}
+                  >
+                    🎮 START A NEW GAME
                   </h3>
-                  <p className="text-gray-600 mb-2">
+                  <p
+                    className="font-pixel text-sm mb-3"
+                    style={{ color: "rgb(0, 255, 255)" }}
+                  >
                     Create a new Deal Master game with PYUSD payment
                   </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <span>
-                      💰 Entry Fee: {formatCurrency(ENTRY_FEE_CENTS)} PYUSD
-                    </span>
-                    <span>
-                      🏆 Max Prize: {formatCurrency(MAX_PRIZE_CENTS)} PYUSD
-                    </span>
+                  <div
+                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs font-pixel"
+                    style={{ color: "rgb(0, 255, 255)" }}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>💰 Entry Fee:</span>
+                      <span style={{ color: "rgb(255, 255, 255)" }}>
+                        {formatCurrency(ENTRY_FEE_CENTS)} PYUSD
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span>🏆 Max Prize:</span>
+                      <span style={{ color: "rgb(255, 255, 255)" }}>
+                        {formatCurrency(MAX_PRIZE_CENTS)} PYUSD
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex space-x-3">
+                <div className="flex-shrink-0">
                   <Button
-                    variant="outline"
+                    variant="cyan"
                     size="lg"
                     onClick={handleCreateGame}
                     loading={creatingGame}
-                    className="flex items-center space-x-2"
+                    className="flex items-center space-x-2 w-full md:w-auto"
                   >
                     <Plus className="h-5 w-5" />
-                    <span>New Game</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    onClick={handleDebugUserId}
-                    className="flex items-center space-x-2"
-                  >
-                    <span>Debug</span>
+                    <span>NEW GAME</span>
                   </Button>
                 </div>
               </div>
@@ -237,38 +264,96 @@ export default function Dashboard() {
 
         {/* Games List */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Games</h2>
+          <h2
+            className="text-xl font-pixel"
+            style={{ color: "rgb(255, 255, 0)" }}
+          >
+            Recent Games
+          </h2>
 
           {loadingGames ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <Card key={i}>
+                <Card key={i} variant="pixel">
                   <CardContent className="p-6">
-                    <div className="animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="animate-text-flicker">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div
+                          className="h-4 w-32 border-2"
+                          style={{
+                            borderColor: "rgba(0, 255, 255, 0.3)",
+                            backgroundColor: "rgba(0, 255, 255, 0.1)",
+                          }}
+                        ></div>
+                        <div
+                          className="h-6 w-20 border-2"
+                          style={{
+                            borderColor: "rgba(255, 255, 0, 0.3)",
+                            backgroundColor: "rgba(255, 255, 0, 0.1)",
+                          }}
+                        ></div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map((j) => (
+                          <div key={j}>
+                            <div
+                              className="h-3 w-16 mb-1 border"
+                              style={{
+                                borderColor: "rgba(0, 255, 255, 0.2)",
+                                backgroundColor: "rgba(0, 255, 255, 0.05)",
+                              }}
+                            ></div>
+                            <div
+                              className="h-3 w-12 border"
+                              style={{
+                                borderColor: "rgba(255, 255, 255, 0.2)",
+                                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                              }}
+                            ></div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : games.length === 0 ? (
-            <Card>
+            <Card variant="pixel">
               <CardContent className="p-8 text-center">
-                <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No Games Yet
+                <div
+                  className="w-16 h-16 mx-auto mb-4 border-4 flex items-center justify-center animate-text-flicker"
+                  style={{
+                    borderColor: "rgb(255, 255, 0)",
+                    backgroundColor: "rgba(255, 255, 0, 0.1)",
+                  }}
+                >
+                  <Trophy
+                    className="h-8 w-8"
+                    style={{ color: "rgb(255, 255, 0)" }}
+                  />
+                </div>
+                <h3
+                  className="text-xl font-pixel mb-3"
+                  style={{ color: "rgb(255, 255, 0)" }}
+                >
+                  🎮 NO GAMES YET
                 </h3>
-                <p className="text-gray-600 mb-4">
-                  Create your first game to start playing Deal Master!
+                <p
+                  className="font-pixel text-sm mb-6 max-w-md mx-auto"
+                  style={{ color: "rgb(0, 255, 255)" }}
+                >
+                  Ready to test your luck? Create your first Deal Master game
+                  and face the banker in this epic battle of nerves!
                 </p>
                 <Button
-                  variant="primary"
+                  variant="cyan"
+                  size="lg"
                   onClick={handleCreateGame}
                   className="flex items-center space-x-2 mx-auto"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span>Create Game</span>
+                  <Plus className="h-5 w-5" />
+                  <span>🚀 CREATE FIRST GAME</span>
                 </Button>
               </CardContent>
             </Card>
@@ -277,57 +362,84 @@ export default function Dashboard() {
               {games.map((game) => (
                 <Card
                   key={game.id}
-                  className="hover:shadow-md transition-shadow"
+                  variant="pixel"
+                  className="hover:shadow-neon-glow-cyan transition-all"
                 >
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Game #{game.id}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                          <h3
+                            className="text-lg font-pixel"
+                            style={{ color: "rgb(255, 255, 0)" }}
+                          >
+                            🎯 Game #{game.id.slice(0, 8)}...{game.id.slice(-4)}
                           </h3>
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              game.status === "PLAYING"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : game.status === "FINISHED"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-100 text-gray-800"
-                            }`}
+                            className="px-2 py-1 text-xs font-pixel border-2 w-fit"
+                            style={{
+                              borderColor:
+                                game.status === "PLAYING"
+                                  ? "rgb(255, 255, 0)"
+                                  : game.status === "FINISHED"
+                                    ? "rgb(0, 255, 0)"
+                                    : "rgb(128, 128, 128)",
+                              color:
+                                game.status === "PLAYING"
+                                  ? "rgb(255, 255, 0)"
+                                  : game.status === "FINISHED"
+                                    ? "rgb(0, 255, 0)"
+                                    : "rgb(128, 128, 128)",
+                              backgroundColor:
+                                game.status === "PLAYING"
+                                  ? "rgba(255, 255, 0, 0.1)"
+                                  : game.status === "FINISHED"
+                                    ? "rgba(0, 255, 0, 0.1)"
+                                    : "rgba(128, 128, 128, 0.1)",
+                            }}
                           >
                             {game.status === "PLAYING"
-                              ? "In Progress"
+                              ? "IN PROGRESS"
                               : game.status === "FINISHED"
-                                ? "Completed"
+                                ? "COMPLETED"
                                 : game.status}
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-pixel">
                           <div>
-                            <span className="font-medium">Entry Fee:</span>
+                            <span style={{ color: "rgb(0, 255, 255)" }}>
+                              Entry Fee:
+                            </span>
                             <br />
-                            {formatCurrency(game.entry_fee_cents)}
+                            <span style={{ color: "rgb(255, 255, 255)" }}>
+                              {formatCurrency(game.entry_fee_cents)}
+                            </span>
                           </div>
                           <div>
-                            <span className="font-medium">Created:</span>
+                            <span style={{ color: "rgb(0, 255, 255)" }}>
+                              Created:
+                            </span>
                             <br />
-                            {formatDate(game.created_at)}
+                            <span style={{ color: "rgb(255, 255, 255)" }}>
+                              {formatDate(game.created_at)}
+                            </span>
                           </div>
                           {game.final_won_cents && (
                             <div>
-                              <span className="font-medium">
+                              <span style={{ color: "rgb(0, 255, 255)" }}>
                                 {game.final_won_cents >= game.entry_fee_cents
                                   ? "Won:"
                                   : "Lost:"}
                               </span>
                               <br />
                               <span
-                                className={`font-semibold ${
-                                  game.final_won_cents >= game.entry_fee_cents
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }`}
+                                style={{
+                                  color:
+                                    game.final_won_cents >= game.entry_fee_cents
+                                      ? "rgb(0, 255, 0)"
+                                      : "rgb(255, 0, 0)",
+                                }}
                               >
                                 {formatCurrency(game.final_won_cents)}
                               </span>
@@ -336,11 +448,11 @@ export default function Dashboard() {
                           {game.banker_offer_cents &&
                             game.status === "PLAYING" && (
                               <div>
-                                <span className="font-medium">
+                                <span style={{ color: "rgb(0, 255, 255)" }}>
                                   Current Offer:
                                 </span>
                                 <br />
-                                <span className="text-primary-600 font-semibold">
+                                <span style={{ color: "rgb(255, 0, 255)" }}>
                                   {formatCurrency(game.banker_offer_cents)}
                                 </span>
                               </div>
@@ -348,15 +460,17 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <div className="ml-4">
+                      <div className="flex-shrink-0">
                         <Button
-                          variant="outline"
+                          variant="magenta"
                           onClick={() => handlePlayGame(game.id)}
-                          className="flex items-center space-x-2"
+                          className="flex items-center space-x-2 w-full lg:w-auto"
                         >
                           <Play className="h-4 w-4" />
                           <span>
-                            {game.status === "PLAYING" ? "Continue" : "View"}
+                            {game.status === "PLAYING"
+                              ? " CONTINUE"
+                              : " VIEW GAME"}
                           </span>
                         </Button>
                       </div>
@@ -379,14 +493,14 @@ export default function Dashboard() {
               className="flex items-center space-x-1"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span>Previous</span>
+              <span>PREVIOUS</span>
             </Button>
 
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center space-x-2 font-pixel text-xs">
+              <span style={{ color: "rgb(0, 255, 255)" }}>
                 Page {pagination.page} of {pagination.totalPages}
               </span>
-              <span className="text-sm text-gray-500">
+              <span style={{ color: "rgba(0, 255, 255, 0.7)" }}>
                 ({pagination.total} total games)
               </span>
             </div>
@@ -398,7 +512,7 @@ export default function Dashboard() {
               disabled={!pagination.hasNext || loadingGames}
               className="flex items-center space-x-1"
             >
-              <span>Next</span>
+              <span>NEXT</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -406,56 +520,87 @@ export default function Dashboard() {
 
         {/* Stats */}
         <div className="mt-12 grid md:grid-cols-3 gap-6">
-          <Card>
+          <Card variant="pixel">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                <span>Total Games</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {pagination.total}
-              </div>
-              <p className="text-sm text-gray-600 mt-1">Games played</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5 text-blue-500" />
-                <span>Active Games</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {games.filter((g) => g.status === "PLAYING").length}
-              </div>
-              <p className="text-sm text-gray-600 mt-1">Currently playing</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Trophy className="h-5 w-5 text-green-500" />
-                <span>Net Profit</span>
+              <CardTitle className="flex items-center space-x-2 font-pixel text-sm">
+                <Trophy
+                  className="h-5 w-5"
+                  style={{ color: "rgb(255, 255, 0)" }}
+                />
+                <span style={{ color: "rgb(255, 255, 0)" }}>
+                  🎯 Total Games
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div
-                className={`text-3xl font-bold ${
-                  games
-                    .filter((g) => g.final_won_cents)
-                    .reduce(
-                      (sum, g) =>
-                        sum + ((g.final_won_cents || 0) - g.entry_fee_cents),
-                      0
-                    ) >= 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
+                className="text-3xl font-pixel"
+                style={{ color: "rgb(0, 255, 255)" }}
+              >
+                {pagination.total}
+              </div>
+              <p
+                className="text-xs font-pixel mt-1"
+                style={{ color: "rgba(0, 255, 255, 0.7)" }}
+              >
+                Games played
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card variant="pixel">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 font-pixel text-sm">
+                <Clock
+                  className="h-5 w-5"
+                  style={{ color: "rgb(0, 255, 255)" }}
+                />
+                <span style={{ color: "rgb(255, 255, 0)" }}>
+                  ⚡ Active Games
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                className="text-3xl font-pixel"
+                style={{ color: "rgb(0, 255, 255)" }}
+              >
+                {games.filter((g) => g.status === "PLAYING").length}
+              </div>
+              <p
+                className="text-xs font-pixel mt-1"
+                style={{ color: "rgba(0, 255, 255, 0.7)" }}
+              >
+                Currently playing
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card variant="pixel">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 font-pixel text-sm">
+                <Trophy
+                  className="h-5 w-5"
+                  style={{ color: "rgb(0, 255, 0)" }}
+                />
+                <span style={{ color: "rgb(255, 255, 0)" }}>💰 Net Profit</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                className="text-3xl font-pixel"
+                style={{
+                  color:
+                    games
+                      .filter((g) => g.final_won_cents)
+                      .reduce(
+                        (sum, g) =>
+                          sum + ((g.final_won_cents || 0) - g.entry_fee_cents),
+                        0
+                      ) >= 0
+                      ? "rgb(0, 255, 0)"
+                      : "rgb(255, 0, 0)",
+                }}
               >
                 {formatCurrency(
                   games
@@ -467,7 +612,12 @@ export default function Dashboard() {
                     )
                 )}
               </div>
-              <p className="text-sm text-gray-600 mt-1">From completed games</p>
+              <p
+                className="text-xs font-pixel mt-1"
+                style={{ color: "rgba(0, 255, 255, 0.7)" }}
+              >
+                From completed games
+              </p>
             </CardContent>
           </Card>
         </div>

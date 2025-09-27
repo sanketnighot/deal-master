@@ -56,10 +56,6 @@ export async function POST(request: NextRequest) {
 
     // Ensure user address is lowercase for consistency
     const normalizedUserAddress = userAddress.toLowerCase();
-    
-    console.log("Game creation - userAddress:", userAddress);
-    console.log("Game creation - normalizedUserAddress:", normalizedUserAddress);
-    console.log("Game creation - authResult.user_id:", authResult.user_id);
 
     // Verify PYUSD payment transaction
     const isPaymentValid = await verifyPYUSDTransfer(
