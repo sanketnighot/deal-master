@@ -5,8 +5,8 @@ import { CardGrid } from "@/components/game/CardGrid";
 import { GameControls } from "@/components/game/GameControls";
 import { WinModal } from "@/components/game/WinModal";
 import { TopBar } from "@/components/layout/TopBar";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameApi } from "@/lib/api";
@@ -298,93 +298,278 @@ export default function GamePage() {
   const unrevealedCount = gameState.cards.filter((c) => !c.revealed).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ backgroundColor: "rgb(28, 0, 51)" }}
+    >
+      <div className="crt-overlay" />
+
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div
+          className="absolute top-10 left-10 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 0, 255)" }}
+        ></div>
+        <div
+          className="absolute top-32 right-20 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(0, 255, 255)" }}
+        ></div>
+        <div
+          className="absolute bottom-20 left-32 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 255, 0)" }}
+        ></div>
+        <div
+          className="absolute bottom-40 right-16 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 0, 255)" }}
+        ></div>
+      </div>
+
       <TopBar />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 relative z-10 max-w-6xl">
         {/* Game Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
             <Button
-              variant="ghost"
+              variant="cyan"
               onClick={() => router.push("/dashboard")}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 w-fit"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Dashboard</span>
+              <span>← BACK TO DASHBOARD</span>
             </Button>
 
-            <div className="flex items-center space-x-2">
-              <div className="text-sm text-gray-600">Game #{gameState.id}</div>
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6">
+              <div
+                className="text-base font-pixel"
+                style={{ color: "rgb(0, 255, 255)" }}
+              >
+                Game #{gameState.id.slice(0, 8)}...{gameState.id.slice(-4)}
+              </div>
               {gameState.status === "FINISHED" && (
-                <div className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                  Completed
+                <div
+                  className="px-4 py-2 text-sm font-pixel border-2 w-fit animate-text-flicker"
+                  style={{
+                    borderColor: "rgb(0, 255, 0)",
+                    color: "rgb(0, 255, 0)",
+                    backgroundColor: "rgba(0, 255, 0, 0.1)",
+                  }}
+                >
+                  ✅ COMPLETED
                 </div>
               )}
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <DollarSign className="h-5 w-5 text-primary-600" />
-                  <span className="font-semibold">Entry Fee</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(gameState.entry_fee_cents)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <Trophy className="h-5 w-5 text-yellow-600" />
-                  <span className="font-semibold">Cases Left</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {unrevealedCount}
-                </div>
-              </CardContent>
-            </Card>
-
-            {gameState.final_won_cents && (
-              <Card>
-                <CardContent className="p-4 text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Trophy className="h-5 w-5 text-green-600" />
-                    <span className="font-semibold">You Won</span>
+          {/* Stats Cards */}
+          <div className="flex flex-col lg:flex-row gap-6 mb-10 justify-center items-stretch">
+            {/* Entry Fee and Cases Left - Always side by side */}
+            <div className="grid grid-cols-2 gap-4 flex-1 max-w-2xl mx-auto lg:mx-0">
+              <Card
+                variant="pixel"
+                className="hover:shadow-neon-glow-cyan transition-all"
+              >
+                <CardContent className="p-4 lg:p-6 text-center">
+                  <div
+                    className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-3 border-4 flex items-center justify-center animate-text-flicker"
+                    style={{
+                      borderColor: "rgb(0, 255, 255)",
+                      backgroundColor: "rgba(0, 255, 255, 0.1)",
+                    }}
+                  >
+                    <DollarSign
+                      className="h-5 w-5 lg:h-6 lg:w-6"
+                      style={{ color: "rgb(0, 255, 255)" }}
+                    />
                   </div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {formatCurrency(gameState.final_won_cents)}
+                  <div
+                    className="font-pixel text-xs lg:text-sm mb-2"
+                    style={{ color: "rgb(0, 255, 255)" }}
+                  >
+                    💰 Entry Fee
+                  </div>
+                  <div
+                    className="text-lg lg:text-2xl font-pixel"
+                    style={{ color: "rgb(255, 255, 255)" }}
+                  >
+                    {formatCurrency(gameState.entry_fee_cents)}
                   </div>
                 </CardContent>
               </Card>
+
+              <Card
+                variant="pixel"
+                className="hover:shadow-neon-glow-yellow transition-all"
+              >
+                <CardContent className="p-4 lg:p-6 text-center">
+                  <div
+                    className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-3 border-4 flex items-center justify-center animate-text-flicker"
+                    style={{
+                      borderColor: "rgb(255, 255, 0)",
+                      backgroundColor: "rgba(255, 255, 0, 0.1)",
+                    }}
+                  >
+                    <Trophy
+                      className="h-5 w-5 lg:h-6 lg:w-6"
+                      style={{ color: "rgb(255, 255, 0)" }}
+                    />
+                  </div>
+                  <div
+                    className="font-pixel text-xs lg:text-sm mb-2"
+                    style={{ color: "rgb(255, 255, 0)" }}
+                  >
+                    🎯 Cases Left
+                  </div>
+                  <div
+                    className="text-lg lg:text-2xl font-pixel"
+                    style={{ color: "rgb(255, 255, 255)" }}
+                  >
+                    {unrevealedCount}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Win/Loss Card - Separate when present */}
+            {gameState.final_won_cents !== null && (
+              <div className="flex-shrink-0 max-w-xs mx-auto lg:mx-0">
+                <Card
+                  variant="pixel"
+                  className="hover:shadow-neon-glow-magenta transition-all"
+                >
+                  <CardContent className="p-4 lg:p-6 text-center">
+                    <div
+                      className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-3 border-4 flex items-center justify-center animate-text-flicker"
+                      style={{
+                        borderColor:
+                          gameState.final_won_cents >= gameState.entry_fee_cents
+                            ? "rgb(0, 255, 0)"
+                            : "rgb(255, 0, 0)",
+                        backgroundColor:
+                          gameState.final_won_cents >= gameState.entry_fee_cents
+                            ? "rgba(0, 255, 0, 0.1)"
+                            : "rgba(255, 0, 0, 0.1)",
+                      }}
+                    >
+                      <Trophy
+                        className="h-5 w-5 lg:h-6 lg:w-6"
+                        style={{
+                          color:
+                            gameState.final_won_cents >=
+                            gameState.entry_fee_cents
+                              ? "rgb(0, 255, 0)"
+                              : "rgb(255, 0, 0)",
+                        }}
+                      />
+                    </div>
+                    <div
+                      className="font-pixel text-xs lg:text-sm mb-2"
+                      style={{
+                        color:
+                          gameState.final_won_cents >= gameState.entry_fee_cents
+                            ? "rgb(0, 255, 0)"
+                            : "rgb(255, 0, 0)",
+                      }}
+                    >
+                      {gameState.final_won_cents >= gameState.entry_fee_cents
+                        ? "🏆 You Won"
+                        : "💸 You Lost"}
+                    </div>
+                    <div
+                      className="text-lg lg:text-2xl font-pixel"
+                      style={{
+                        color:
+                          gameState.final_won_cents >= gameState.entry_fee_cents
+                            ? "rgb(0, 255, 0)"
+                            : "rgb(255, 0, 0)",
+                      }}
+                    >
+                      {formatCurrency(gameState.final_won_cents)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         </div>
 
         {/* Game Results Banner */}
         {gameState.status === "FINISHED" && (
-          <div className="max-w-4xl mx-auto mb-6">
-            <Card className="bg-green-50 border-green-200">
-              <CardContent className="p-6 text-center">
-                <div className="text-2xl font-bold text-green-800 mb-2">
-                  🎉 Game Complete!
+          <div className="max-w-4xl mx-auto mb-8">
+            <Card
+              variant="pixel"
+              className={`animate-text-flicker ${
+                (gameState.final_won_cents || 0) >= gameState.entry_fee_cents
+                  ? "hover:shadow-neon-glow-cyan"
+                  : "hover:shadow-neon-glow-magenta"
+              } transition-all`}
+            >
+              <CardContent className="p-8 text-center">
+                <div
+                  className="text-3xl font-pixel mb-4 animate-glitch"
+                  style={{
+                    color:
+                      (gameState.final_won_cents || 0) >=
+                      gameState.entry_fee_cents
+                        ? "rgb(0, 255, 0)"
+                        : "rgb(255, 0, 0)",
+                  }}
+                >
+                  {(gameState.final_won_cents || 0) >= gameState.entry_fee_cents
+                    ? "🎉 VICTORY!"
+                    : "💀 GAME OVER"}
                 </div>
-                <div className="text-lg text-green-700">
-                  You won{" "}
-                  <span className="font-bold">
+                <div
+                  className="text-xl font-pixel mb-4"
+                  style={{ color: "rgb(0, 255, 255)" }}
+                >
+                  Final Amount:{" "}
+                  <span
+                    style={{
+                      color:
+                        (gameState.final_won_cents || 0) >=
+                        gameState.entry_fee_cents
+                          ? "rgb(0, 255, 0)"
+                          : "rgb(255, 0, 0)",
+                    }}
+                  >
                     {formatCurrency(gameState.final_won_cents || 0)}
                   </span>
                 </div>
-                <div className="text-sm text-green-600 mt-2">
-                  Entry Fee: {formatCurrency(gameState.entry_fee_cents)} |
-                  Profit:{" "}
-                  {formatCurrency(
-                    (gameState.final_won_cents || 0) - gameState.entry_fee_cents
-                  )}
+                <div
+                  className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm font-pixel"
+                  style={{ color: "rgb(0, 255, 255)" }}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>💰 Entry Fee:</span>
+                    <span style={{ color: "rgb(255, 255, 255)" }}>
+                      {formatCurrency(gameState.entry_fee_cents)}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span>
+                      {(gameState.final_won_cents || 0) >=
+                      gameState.entry_fee_cents
+                        ? "📈 Profit:"
+                        : "📉 Loss:"}
+                    </span>
+                    <span
+                      style={{
+                        color:
+                          (gameState.final_won_cents || 0) >=
+                          gameState.entry_fee_cents
+                            ? "rgb(0, 255, 0)"
+                            : "rgb(255, 0, 0)",
+                      }}
+                    >
+                      {formatCurrency(
+                        Math.abs(
+                          (gameState.final_won_cents || 0) -
+                            gameState.entry_fee_cents
+                        )
+                      )}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -392,31 +577,39 @@ export default function GamePage() {
         )}
 
         {/* Game Board */}
-        <div className="max-w-4xl mx-auto">
-          <CardGrid
-            cards={gameState.cards}
-            playerCase={gameState.player_case}
-            onCardClick={handleCardClick}
-            gameStatus={gameState.status}
-            className="mb-8"
-          />
+        <div className="w-full">
+          {/* Cases Grid */}
+          <div className="mb-8">
+            <CardGrid
+              cards={gameState.cards}
+              playerCase={gameState.player_case}
+              onCardClick={handleCardClick}
+              gameStatus={gameState.status}
+              className="mb-8"
+            />
+          </div>
 
           {/* Game Controls */}
-          <Card>
-            <CardContent className="p-6">
-              <GameControls
-                gameStatus={gameState.status}
-                playerCase={gameState.player_case}
-                bankerOffer={gameState.banker_offer_cents}
-                unrevealedCount={unrevealedCount}
-                onPickCase={handleCardClick}
-                onBurnCase={handleCardClick}
-                onAcceptDeal={handleAcceptDeal}
-                onFinalReveal={handleFinalReveal}
-                loading={actionLoading}
-              />
-            </CardContent>
-          </Card>
+          <div className="max-w-2xl mx-auto">
+            <Card
+              variant="pixel"
+              className="hover:shadow-neon-glow-magenta transition-all"
+            >
+              <CardContent className="p-6 lg:p-8">
+                <GameControls
+                  gameStatus={gameState.status}
+                  playerCase={gameState.player_case}
+                  bankerOffer={gameState.banker_offer_cents}
+                  unrevealedCount={unrevealedCount}
+                  onPickCase={handleCardClick}
+                  onBurnCase={handleCardClick}
+                  onAcceptDeal={handleAcceptDeal}
+                  onFinalReveal={handleFinalReveal}
+                  loading={actionLoading}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Banker Modal */}

@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 
 interface GameControlsProps {
@@ -38,13 +38,22 @@ export function GameControls({
   if (phase === "finished") {
     return (
       <div className="text-center space-y-4">
-        <div className="text-lg font-semibold text-gray-600">
-          🎉 Game Complete!
+        <div
+          className="text-xl font-pixel animate-glitch"
+          style={{ color: "rgb(0, 255, 0)" }}
+        >
+          🎉 GAME COMPLETE!
         </div>
-        <div className="text-sm text-gray-500">
+        <div
+          className="text-sm font-pixel"
+          style={{ color: "rgb(0, 255, 255)" }}
+        >
           Check the results above to see your final winnings!
         </div>
-        <div className="text-xs text-gray-400">
+        <div
+          className="text-xs font-pixel animate-text-flicker"
+          style={{ color: "rgba(0, 255, 255, 0.7)" }}
+        >
           Click on any case to see its revealed value
         </div>
       </div>
@@ -53,13 +62,19 @@ export function GameControls({
 
   if (phase === "pick") {
     return (
-      <div className="text-center space-y-4">
-        <div className="text-lg font-semibold text-gray-800">
-          Choose Your Case
+      <div className="text-center space-y-6">
+        <div
+          className="text-xl lg:text-2xl font-pixel animate-text-flicker"
+          style={{ color: "rgb(255, 255, 0)" }}
+        >
+          🎯 CHOOSE YOUR CASE
         </div>
-        <div className="text-sm text-gray-600">
+        <div
+          className="text-sm lg:text-base font-pixel max-w-lg mx-auto leading-relaxed"
+          style={{ color: "rgb(0, 255, 255)" }}
+        >
           Click on any case to select it as yours. You'll keep this case
-          throughout the game.
+          throughout the game and face the banker's offers!
         </div>
       </div>
     );
@@ -67,40 +82,58 @@ export function GameControls({
 
   if (phase === "final") {
     return (
-      <div className="text-center space-y-4">
-        <div className="text-lg font-semibold text-gray-800">
-          Final Decision
+      <div className="text-center space-y-6">
+        <div
+          className="text-xl lg:text-2xl font-pixel animate-glitch"
+          style={{ color: "rgb(255, 0, 255)" }}
+        >
+          ⚡ FINAL DECISION
         </div>
-        <div className="text-sm text-gray-600 mb-4">
+        <div
+          className="text-sm lg:text-base font-pixel mb-4 max-w-lg mx-auto leading-relaxed"
+          style={{ color: "rgb(0, 255, 255)" }}
+        >
           Only 2 cases remain! You can keep your case or swap it with the other
-          remaining case.
+          remaining case. Choose wisely!
         </div>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
           <Button
-            variant="primary"
+            variant="magenta"
             size="lg"
             onClick={() => onFinalReveal(false)}
             loading={loading}
             className="w-full"
           >
-            Keep My Case
+            👑 KEEP MY CASE
           </Button>
           <Button
-            variant="outline"
+            variant="cyan"
             size="lg"
             onClick={() => onFinalReveal(true)}
             loading={loading}
             className="w-full"
           >
-            Swap Cases
+            🔄 SWAP CASES
           </Button>
         </div>
         {bankerOffer && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
-            <div className="text-sm font-medium text-yellow-800 mb-2">
-              🏦 Banker's Offer
+          <div
+            className="border-4 p-6 mt-8 animate-text-flicker max-w-sm mx-auto"
+            style={{
+              borderColor: "rgb(255, 255, 0)",
+              backgroundColor: "rgba(255, 255, 0, 0.1)",
+            }}
+          >
+            <div
+              className="text-sm lg:text-base font-pixel mb-3 text-center"
+              style={{ color: "rgb(255, 255, 0)" }}
+            >
+              🏦 BANKER'S FINAL OFFER
             </div>
-            <div className="text-2xl font-bold text-yellow-900 mb-3">
+            <div
+              className="text-2xl lg:text-3xl font-pixel mb-4 text-center"
+              style={{ color: "rgb(255, 255, 255)" }}
+            >
               {formatCurrency(bankerOffer)}
             </div>
             <Button
@@ -109,7 +142,7 @@ export function GameControls({
               loading={loading}
               className="w-full"
             >
-              Accept Deal
+              💰 ACCEPT DEAL
             </Button>
           </div>
         )}
@@ -119,18 +152,38 @@ export function GameControls({
 
   if (phase === "burn") {
     return (
-      <div className="text-center space-y-4">
-        <div className="text-lg font-semibold text-gray-800">Burn a Case</div>
-        <div className="text-sm text-gray-600">
-          Click on any case (except yours) to reveal its value and remove it
-          from the game.
+      <div className="text-center space-y-6">
+        <div
+          className="text-xl lg:text-2xl font-pixel animate-text-flicker"
+          style={{ color: "rgb(255, 0, 0)" }}
+        >
+          🔥 BURN A CASE
+        </div>
+        <div
+          className="text-sm lg:text-base font-pixel max-w-lg mx-auto leading-relaxed"
+          style={{ color: "rgb(0, 255, 255)" }}
+        >
+          Click on any case (except yours) to reveal its value and eliminate it
+          from the game. The banker is watching...
         </div>
         {bankerOffer && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="text-sm font-medium text-yellow-800 mb-2">
-              🏦 Banker's Offer
+          <div
+            className="border-4 p-6 animate-text-flicker max-w-sm mx-auto"
+            style={{
+              borderColor: "rgb(255, 255, 0)",
+              backgroundColor: "rgba(255, 255, 0, 0.1)",
+            }}
+          >
+            <div
+              className="text-sm lg:text-base font-pixel mb-3 text-center"
+              style={{ color: "rgb(255, 255, 0)" }}
+            >
+              🏦 BANKER'S OFFER
             </div>
-            <div className="text-2xl font-bold text-yellow-900 mb-3">
+            <div
+              className="text-2xl lg:text-3xl font-pixel mb-4 text-center"
+              style={{ color: "rgb(255, 255, 255)" }}
+            >
               {formatCurrency(bankerOffer)}
             </div>
             <Button
@@ -139,7 +192,7 @@ export function GameControls({
               loading={loading}
               className="w-full"
             >
-              Accept Deal
+              💰 ACCEPT DEAL
             </Button>
           </div>
         )}
