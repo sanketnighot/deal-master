@@ -1,9 +1,9 @@
 'use client'
 
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { formatCurrency } from '@/lib/utils'
-import { CheckCircle, Trophy, X } from 'lucide-react'
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils";
+import { CheckCircle, Trophy, X } from "lucide-react";
 
 interface WinModalProps {
   isOpen: boolean
