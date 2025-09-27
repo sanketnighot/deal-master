@@ -29,7 +29,6 @@ async function convertPublicKeyToAddress(publicKey: string): Promise<string> {
 
     // Create a public key object and compute the address
     const address = ethers.computeAddress(cleanKey);
-    console.log("Converted public key to address:", publicKey, "->", address);
     return address;
   } catch (error) {
     console.error(
@@ -71,9 +70,6 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const extractUserInfo = async () => {
       if (isConnected && userInfo) {
-        // Debug: Log the userInfo structure
-        console.log("Web3Auth userInfo:", JSON.stringify(userInfo, null, 2));
-
         // Extract user ID (email for social login, wallet address for wallet login)
         const id =
           (userInfo as any).verifierId || (userInfo as any).userId || "unknown";
@@ -88,10 +84,9 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
             const ethersProvider = new ethers.BrowserProvider(provider);
             const signer = await ethersProvider.getSigner();
             address = await signer.getAddress();
-            console.log("Got address from provider:", address);
           }
         } catch (error) {
-          console.log("Could not get address from provider:", error);
+          console.error("Could not get address from provider:", error);
         }
 
         // If no address from provider, try JWT token (for social logins)
@@ -101,7 +96,6 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
             try {
               // Decode JWT token (without verification since we're just extracting info)
               const payload = JSON.parse(atob(idToken.split(".")[1]));
-              console.log("JWT Payload:", JSON.stringify(payload, null, 2));
 
               // Extract wallet address from JWT payload
               if (payload.wallets && payload.wallets.length > 0) {
@@ -130,13 +124,10 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        console.log("Extracted user_id:", id);
-        console.log("Extracted wallet_address:", address);
-
         setUserId(id);
         setWalletAddress(address);
       } else {
-        console.log("Not connected or no userInfo available");
+        console.error("Not connected or no userInfo available");
         setUserId(null);
         setWalletAddress(null);
       }
@@ -173,20 +164,18 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 
     // Try to get the ID token from Web3Auth
     const idToken = (userInfo as any).idToken;
-    
+
     let authToken = null;
-    
+
     if (idToken) {
       // Use JWT token for social login
       authToken = idToken;
-      console.log("Using JWT token for authentication");
     } else {
       // For external wallet connections, use wallet address directly
       if (walletAddress) {
         // Create a simple wallet-based auth token
         // This works for external wallet connections where we don't get a JWT
         authToken = `simple-wallet:${walletAddress}`;
-        console.log("Using simple wallet auth token for address:", walletAddress);
       } else {
         console.error("No wallet address available for authentication");
       }

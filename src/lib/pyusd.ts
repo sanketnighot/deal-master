@@ -1,12 +1,12 @@
-import { ethers } from 'ethers';
-import { pyusd_abi } from './abi';
-import { ADMIN_ADDRESS, PYUSD_ADDRESS } from './config';
+import { ethers } from "ethers";
+import { ADMIN_ADDRESS, PYUSD_ADDRESS } from "./config";
+import { pyusd_abi } from "./pyusd_abi";
 
 // Create provider for server-side operations
 function getProvider() {
   const alchemyApiKey = process.env.ALCHEMY_API_KEY;
   if (!alchemyApiKey) {
-    throw new Error('ALCHEMY_API_KEY environment variable is required');
+    throw new Error("ALCHEMY_API_KEY environment variable is required");
   }
   const rpcUrl = `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`;
   return new ethers.JsonRpcProvider(rpcUrl);
@@ -16,7 +16,7 @@ function getProvider() {
 function getAdminWallet() {
   const privateKey = process.env.ADMIN_PRIVATE_KEY;
   if (!privateKey) {
-    throw new Error('ADMIN_PRIVATE_KEY environment variable is required');
+    throw new Error("ADMIN_PRIVATE_KEY environment variable is required");
   }
   const provider = getProvider();
   return new ethers.Wallet(privateKey, provider);
@@ -42,28 +42,18 @@ export async function verifyPYUSDTransfer(
   expectedAmountCents: number
 ): Promise<boolean> {
   try {
-    console.log('Verifying PYUSD transfer:', {
-      txHash,
-      fromAddress: fromAddress.toLowerCase(),
-      toAddress: toAddress.toLowerCase(),
-      expectedAmountCents
-    });
-
     const provider = getProvider();
     const receipt = await provider.getTransactionReceipt(txHash);
 
     if (!receipt || receipt.status !== 1) {
-      console.log('Transaction receipt not found or failed:', receipt?.status);
       return false;
     }
 
-    console.log('Transaction successful, checking logs...');
-
     const pyusdContract = getPYUSDContract();
-    const expectedAmountWei = ethers.parseUnits((expectedAmountCents / 100).toString(), 6);
-
-    console.log('Expected amount in wei:', expectedAmountWei.toString());
-
+    const expectedAmountWei = ethers.parseUnits(
+      (expectedAmountCents / 100).toString(),
+      6
+    );
     // Parse transaction logs directly from the receipt
     for (const log of receipt.logs) {
       try {
@@ -77,16 +67,10 @@ export async function verifyPYUSDTransfer(
           data: log.data,
         });
 
-        if (parsedLog && parsedLog.name === 'Transfer') {
+        if (parsedLog && parsedLog.name === "Transfer") {
           const transferFrom = parsedLog.args.from.toLowerCase();
           const transferTo = parsedLog.args.to.toLowerCase();
           const transferAmount = parsedLog.args.value;
-
-          console.log('Found Transfer event:', {
-            from: transferFrom,
-            to: transferTo,
-            amount: transferAmount.toString()
-          });
 
           // Verify the transfer matches our expectations
           if (
@@ -94,7 +78,6 @@ export async function verifyPYUSDTransfer(
             transferTo === toAddress.toLowerCase() &&
             transferAmount.toString() === expectedAmountWei.toString()
           ) {
-            console.log('Transfer verification successful!');
             return true;
           }
         }
@@ -103,11 +86,9 @@ export async function verifyPYUSDTransfer(
         continue;
       }
     }
-
-    console.log('No matching transfer found in transaction logs');
     return false;
   } catch (error) {
-    console.error('Error verifying PYUSD transfer:', error);
+    console.error("Error verifying PYUSD transfer:", error);
     return false;
   }
 }
@@ -119,14 +100,17 @@ export async function distributePrize(
 ): Promise<{ success: boolean; txHash?: string; error?: string }> {
   try {
     const pyusdContract = getAdminPYUSDContract();
-    const prizeAmountWei = ethers.parseUnits((prizeAmountCents / 100).toString(), 6);
+    const prizeAmountWei = ethers.parseUnits(
+      (prizeAmountCents / 100).toString(),
+      6
+    );
 
     // Check admin balance
     const adminBalance = await pyusdContract.balanceOf(ADMIN_ADDRESS);
     if (adminBalance < prizeAmountWei) {
       return {
         success: false,
-        error: 'Insufficient admin wallet balance for prize distribution',
+        error: "Insufficient admin wallet balance for prize distribution",
       };
     }
 
@@ -142,14 +126,14 @@ export async function distributePrize(
     } else {
       return {
         success: false,
-        error: 'Transaction failed',
+        error: "Transaction failed",
       };
     }
   } catch (error: any) {
-    console.error('Error distributing prize:', error);
+    console.error("Error distributing prize:", error);
     return {
       success: false,
-      error: error.message || 'Failed to distribute prize',
+      error: error.message || "Failed to distribute prize",
     };
   }
 }
@@ -161,8 +145,8 @@ export async function getPYUSDBalance(address: string): Promise<string> {
     const balance = await pyusdContract.balanceOf(address);
     return ethers.formatUnits(balance, 6);
   } catch (error) {
-    console.error('Error getting PYUSD balance:', error);
-    return '0';
+    console.error("Error getting PYUSD balance:", error);
+    return "0";
   }
 }
 
