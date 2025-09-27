@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- Games table - stores game sessions
 CREATE TABLE IF NOT EXISTS games (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id text NOT NULL,                 -- web3auth sub or wallet address
+  user_id text NOT NULL,                 -- wallet address (used as primary user identifier)
   entry_fee_cents int NOT NULL DEFAULT 2000,
   currency text NOT NULL DEFAULT 'USD',
   created_at timestamptz DEFAULT now(),
@@ -15,7 +15,10 @@ CREATE TABLE IF NOT EXISTS games (
   player_case int NULL,                  -- index of player's chosen case (0-4)
   banker_offer_cents int NULL,           -- current banker offer in cents
   accepted_deal boolean DEFAULT false,   -- whether player accepted the deal
-  final_won_cents int NULL               -- final amount won in cents
+  final_won_cents int NULL,              -- final amount won in cents
+  payment_tx_hash text NULL,             -- blockchain transaction hash for payment
+  prize_distributed boolean DEFAULT false, -- whether prize has been distributed
+  prize_tx_hash text NULL                -- blockchain transaction hash for prize distribution
 );
 
 -- Cards table - stores individual case values
@@ -59,7 +62,7 @@ COMMENT ON TABLE games IS 'Game sessions with player state and banker offers';
 COMMENT ON TABLE cards IS 'Individual case values for each game';
 COMMENT ON TABLE moves IS 'Audit trail of all game actions for debugging and analytics';
 
-COMMENT ON COLUMN games.user_id IS 'Web3Auth subject ID or wallet address';
+COMMENT ON COLUMN games.user_id IS 'Wallet address (primary user identifier)';
 COMMENT ON COLUMN games.entry_fee_cents IS 'Entry fee in cents (e.g., 2000 = $20.00)';
 COMMENT ON COLUMN games.player_case IS 'Index (0-4) of the case chosen by the player';
 COMMENT ON COLUMN games.banker_offer_cents IS 'Current banker offer in cents';

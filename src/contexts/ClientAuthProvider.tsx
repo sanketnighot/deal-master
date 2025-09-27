@@ -1,24 +1,53 @@
 'use client'
 
 import {
+  useWeb3Auth,
   useWeb3AuthConnect,
   useWeb3AuthDisconnect,
   useWeb3AuthUser,
 } from "@web3auth/modal/react";
-import {
-  ReactNode,
-  useEffect,
-  useState,
-} from "react";
+import { ethers } from "ethers";
+import { ReactNode, useEffect, useState } from "react";
 
 // Import the context and types from the main AuthContext file
-import { AuthContext } from './AuthContext';
+import { AuthContext } from "./AuthContext";
+
+// Function to convert public key to Ethereum address
+async function convertPublicKeyToAddress(publicKey: string): Promise<string> {
+  try {
+    if (!publicKey) {
+      throw new Error("Public key is empty or undefined");
+    }
+
+    // Remove the 04 prefix if present (uncompressed public key)
+    let cleanKey = publicKey.startsWith("04") ? publicKey.slice(2) : publicKey;
+
+    // Ensure the key has the 0x prefix for ethers.computeAddress
+    if (!cleanKey.startsWith("0x")) {
+      cleanKey = "0x" + cleanKey;
+    }
+
+    // Create a public key object and compute the address
+    const address = ethers.computeAddress(cleanKey);
+    console.log("Converted public key to address:", publicKey, "->", address);
+    return address;
+  } catch (error) {
+    console.error(
+      "Failed to convert public key to address:",
+      error,
+      "Public key:",
+      publicKey
+    );
+    return publicKey; // Return original if conversion fails
+  }
+}
 
 export function ClientAuthProvider({ children }: { children: ReactNode }) {
   // Always call hooks, but conditionally use their values
   const web3AuthConnect = useWeb3AuthConnect();
   const web3AuthDisconnect = useWeb3AuthDisconnect();
   const web3AuthUser = useWeb3AuthUser();
+  const { web3Auth } = useWeb3Auth();
 
   const {
     connect: web3AuthConnectFn,
@@ -40,22 +69,81 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 
   // Extract user information
   useEffect(() => {
-    if (isConnected && userInfo) {
-      // Debug: Log the userInfo structure
-      // console.log('Web3Auth userInfo:', JSON.stringify(userInfo, null, 2));
+    const extractUserInfo = async () => {
+      if (isConnected && userInfo) {
+        // Debug: Log the userInfo structure
+        console.log("Web3Auth userInfo:", JSON.stringify(userInfo, null, 2));
 
-      const id =
-        (userInfo as any).verifierId || (userInfo as any).verifier || "unknown";
-      const address =
-        (userInfo as any).verifierId || (userInfo as any).publicAddress || null;
+        // Extract user ID (email for social login, wallet address for wallet login)
+        const id =
+          (userInfo as any).verifierId || (userInfo as any).userId || "unknown";
 
-      setUserId(id);
-      setWalletAddress(address);
-    } else {
-      setUserId(null);
-      setWalletAddress(null);
-    }
-  }, [isConnected, userInfo]);
+        // Extract wallet address from the JWT token or provider
+        let address = null;
+
+        // First, try to get address from Web3Auth provider (for MetaMask connections)
+        try {
+          const provider = web3Auth?.provider;
+          if (provider) {
+            const ethersProvider = new ethers.BrowserProvider(provider);
+            const signer = await ethersProvider.getSigner();
+            address = await signer.getAddress();
+            console.log("Got address from provider:", address);
+          }
+        } catch (error) {
+          console.log("Could not get address from provider:", error);
+        }
+
+        // If no address from provider, try JWT token (for social logins)
+        if (!address) {
+          const idToken = (userInfo as any).idToken;
+          if (idToken) {
+            try {
+              // Decode JWT token (without verification since we're just extracting info)
+              const payload = JSON.parse(atob(idToken.split(".")[1]));
+              console.log("JWT Payload:", JSON.stringify(payload, null, 2));
+
+              // Extract wallet address from JWT payload
+              if (payload.wallets && payload.wallets.length > 0) {
+                // Find the first secp256k1 wallet (Ethereum-compatible)
+                const ethWallet = payload.wallets.find(
+                  (w: any) => w.curve === "secp256k1"
+                );
+                if (ethWallet) {
+                  // Convert public key to Ethereum address
+                  address = await convertPublicKeyToAddress(
+                    ethWallet.public_key
+                  );
+                } else {
+                  // Fallback to first wallet
+                  const firstWallet = payload.wallets[0];
+                  if (firstWallet && firstWallet.public_key) {
+                    address = await convertPublicKeyToAddress(
+                      firstWallet.public_key
+                    );
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Failed to decode JWT token:", error);
+            }
+          }
+        }
+
+        console.log("Extracted user_id:", id);
+        console.log("Extracted wallet_address:", address);
+
+        setUserId(id);
+        setWalletAddress(address);
+      } else {
+        console.log("Not connected or no userInfo available");
+        setUserId(null);
+        setWalletAddress(null);
+      }
+    };
+
+    extractUserInfo();
+  }, [isConnected, userInfo, web3Auth]);
 
   const connect = async () => {
     try {
@@ -83,16 +171,35 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Not authenticated");
     }
 
-    // Get the ID token from Web3Auth
+    // Try to get the ID token from Web3Auth
     const idToken = (userInfo as any).idToken;
-    if (!idToken) {
-      throw new Error("No ID token available");
+    
+    let authToken = null;
+    
+    if (idToken) {
+      // Use JWT token for social login
+      authToken = idToken;
+      console.log("Using JWT token for authentication");
+    } else {
+      // For external wallet connections, use wallet address directly
+      if (walletAddress) {
+        // Create a simple wallet-based auth token
+        // This works for external wallet connections where we don't get a JWT
+        authToken = `simple-wallet:${walletAddress}`;
+        console.log("Using simple wallet auth token for address:", walletAddress);
+      } else {
+        console.error("No wallet address available for authentication");
+      }
+    }
+
+    if (!authToken) {
+      throw new Error("No authentication token available");
     }
 
     const headers = {
       ...options.headers,
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`,
+      Authorization: `Bearer ${authToken}`,
     };
 
     return fetch(url, { ...options, headers });

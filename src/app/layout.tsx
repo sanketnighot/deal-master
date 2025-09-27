@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deal Master - Deal or No Deal Game",
+  title: "Deal Master - Deal Master Game",
   description:
-    "Experience the classic Deal or No Deal game with Web3 authentication. Choose your case, burn others, and decide when to take the banker's offer!",
+    "Experience the classic Deal Master game with Web3 authentication. Choose your case, burn others, and decide when to take the banker's offer!",
 };
 
 export default function RootLayout({

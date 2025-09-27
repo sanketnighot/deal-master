@@ -19,7 +19,7 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 // Database types
 export interface Game {
   id: string
-  user_id: string
+  user_id: string  // wallet address
   entry_fee_cents: number
   currency: string
   created_at: string
@@ -28,6 +28,9 @@ export interface Game {
   banker_offer_cents: number | null
   accepted_deal: boolean
   final_won_cents: number | null
+  payment_tx_hash: string | null
+  prize_distributed: boolean
+  prize_tx_hash: string | null
 }
 
 export interface Card {

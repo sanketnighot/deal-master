@@ -2,15 +2,17 @@
 
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, User, Wallet } from "lucide-react";
+import { LogOut, Wallet } from "lucide-react";
 
 interface TopBarProps {
-  className?: string
+  className?: string;
 }
 
 export function TopBar({ className }: TopBarProps) {
-  const { user, isAuthenticated, disconnect, isLoading } = useAuth();
-
+  const { user, isAuthenticated, disconnect, isLoading, walletAddress } =
+    useAuth();
+  console.log("User:", user);
+  console.log("Wallet address:", walletAddress);
   const handleLogout = async () => {
     try {
       await disconnect();
@@ -35,42 +37,34 @@ export function TopBar({ className }: TopBarProps) {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
                 <span className="text-sm text-gray-500">Loading...</span>
               </div>
-            ) : isAuthenticated && user ? (
-              <div className="flex items-center space-x-4">
-                {/* User Info */}
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  {user.email ? (
-                    <>
-                      <User className="h-4 w-4" />
-                      <span className="hidden sm:inline">{user.email}</span>
-                    </>
-                  ) : (user as any).verifierId ? (
-                    <>
-                      <Wallet className="h-4 w-4" />
-                      <span className="hidden sm:inline font-mono text-xs">
-                        {(user as any).verifierId.slice(0, 6)}...
-                        {(user as any).verifierId.slice(-4)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <User className="h-4 w-4" />
-                      <span className="hidden sm:inline">User</span>
-                    </>
-                  )}
-                </div>
+            ) : isAuthenticated ? (
+              walletAddress ? (
+                <div className="flex items-center space-x-4">
+                  {/* User Info */}
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Wallet className="h-4 w-4" />
+                    <span className="hidden sm:inline font-mono text-xs">
+                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </span>
+                  </div>
 
-                {/* Logout Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="flex items-center space-x-1"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">Logout</span>
-                </Button>
-              </div>
+                  {/* Logout Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="flex items-center space-x-1"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="hidden sm:inline">Logout</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                  <span className="text-sm text-gray-500">Loading wallet...</span>
+                </div>
+              )
             ) : (
               <div className="text-sm text-gray-500">Not logged in</div>
             )}

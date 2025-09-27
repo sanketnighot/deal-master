@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/TopBar'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
+import { ENTRY_FEE_CENTS, MAX_PRIZE_CENTS } from "@/lib/config";
 import { formatCurrency } from '@/lib/utils'
 import { ArrowLeft, DollarSign, Play, Trophy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -42,9 +43,9 @@ export default function DemoPage() {
 
   const startDemo = () => {
     setGameState({
-      id: 'demo',
-      status: 'PLAYING',
-      entry_fee_cents: 2000,
+      id: "demo",
+      status: "PLAYING",
+      entry_fee_cents: ENTRY_FEE_CENTS,
       player_case: null,
       banker_offer_cents: null,
       accepted_deal: false,
@@ -52,171 +53,204 @@ export default function DemoPage() {
       cards: [
         { idx: 0, value_cents: 500, revealed: false, burned: false },
         { idx: 1, value_cents: 1000, revealed: false, burned: false },
-        { idx: 2, value_cents: 2000, revealed: false, burned: false },
-        { idx: 3, value_cents: 5000, revealed: false, burned: false },
+        {
+          idx: 2,
+          value_cents: ENTRY_FEE_CENTS,
+          revealed: false,
+          burned: false,
+        },
+        {
+          idx: 3,
+          value_cents: MAX_PRIZE_CENTS,
+          revealed: false,
+          burned: false,
+        },
         { idx: 4, value_cents: 10000, revealed: false, burned: false },
-      ]
-    })
-    setGameStarted(true)
+      ],
+    });
+    setGameStarted(true);
 
     addToast({
-      type: 'success',
-      title: 'Demo Started',
-      message: 'Choose your case to begin!'
-    })
-  }
+      type: "success",
+      title: "Demo Started",
+      message: "Choose your case to begin!",
+    });
+  };
 
   const handleCardClick = async (idx: number) => {
-    if (!gameState || actionLoading) return
+    if (!gameState || actionLoading) return;
 
     try {
-      setActionLoading(true)
+      setActionLoading(true);
 
       if (gameState.player_case === null) {
         // Pick case
-        await pickCase(idx)
-      } else if (gameState.player_case !== idx && !gameState.cards.find(c => c.idx === idx)?.revealed) {
+        await pickCase(idx);
+      } else if (
+        gameState.player_case !== idx &&
+        !gameState.cards.find((c) => c.idx === idx)?.revealed
+      ) {
         // Burn case
-        await burnCase(idx)
+        await burnCase(idx);
       }
     } catch (error) {
       addToast({
-        type: 'error',
-        title: 'Action Failed',
-        message: 'Please try again'
-      })
+        type: "error",
+        title: "Action Failed",
+        message: "Please try again",
+      });
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const pickCase = async (idx: number) => {
     // Simulate API call
     setTimeout(() => {
-      setGameState(prev => prev ? {
-        ...prev,
-        player_case: idx
-      } : null)
+      setGameState((prev) =>
+        prev
+          ? {
+              ...prev,
+              player_case: idx,
+            }
+          : null
+      );
 
       addToast({
-        type: 'success',
-        title: 'Case Selected',
-        message: `You chose Case ${idx + 1}! Now burn other cases.`
-      })
-    }, 500)
-  }
+        type: "success",
+        title: "Case Selected",
+        message: `You chose Case ${idx + 1}! Now burn other cases.`,
+      });
+    }, 500);
+  };
 
   const burnCase = async (idx: number) => {
     // Simulate API call
     setTimeout(() => {
-      const card = gameState?.cards.find(c => c.idx === idx)
-      if (!card) return
+      const card = gameState?.cards.find((c) => c.idx === idx);
+      if (!card) return;
 
-      setGameState(prev => prev ? {
-        ...prev,
-        cards: prev.cards.map(c =>
-          c.idx === idx ? { ...c, revealed: true, burned: true } : c
-        ),
-        banker_offer_cents: 1500 // Simulate banker offer
-      } : null)
+      setGameState((prev) =>
+        prev
+          ? {
+              ...prev,
+              cards: prev.cards.map((c) =>
+                c.idx === idx ? { ...c, revealed: true, burned: true } : c
+              ),
+              banker_offer_cents: 1500, // Simulate banker offer
+            }
+          : null
+      );
 
       addToast({
-        type: 'info',
-        title: 'Case Burned',
-        message: `Case ${idx + 1} contained ${formatCurrency(card.value_cents)}`
-      })
+        type: "info",
+        title: "Case Burned",
+        message: `Case ${idx + 1} contained ${formatCurrency(card.value_cents)}`,
+      });
 
       // Show banker modal after a delay
       setTimeout(() => {
-        setShowBankerModal(true)
-      }, 1000)
-    }, 500)
-  }
+        setShowBankerModal(true);
+      }, 1000);
+    }, 500);
+  };
 
   const handleAcceptDeal = async () => {
     try {
-      setActionLoading(true)
+      setActionLoading(true);
 
       // Simulate API call
       setTimeout(() => {
-        setGameState(prev => prev ? {
-          ...prev,
-          accepted_deal: true,
-          final_won_cents: prev.banker_offer_cents,
-          status: 'FINISHED'
-        } : null)
+        setGameState((prev) =>
+          prev
+            ? {
+                ...prev,
+                accepted_deal: true,
+                final_won_cents: prev.banker_offer_cents,
+                status: "FINISHED",
+              }
+            : null
+        );
 
-        setShowBankerModal(false)
+        setShowBankerModal(false);
 
         addToast({
-          type: 'success',
-          title: 'Deal Accepted!',
-          message: `You won ${formatCurrency(gameState?.banker_offer_cents || 0)}!`
-        })
-      }, 500)
+          type: "success",
+          title: "Deal Accepted!",
+          message: `You won ${formatCurrency(gameState?.banker_offer_cents || 0)}!`,
+        });
+      }, 500);
     } catch (error) {
       addToast({
-        type: 'error',
-        title: 'Failed to Accept Deal',
-        message: 'Please try again'
-      })
+        type: "error",
+        title: "Failed to Accept Deal",
+        message: "Please try again",
+      });
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const handleRejectDeal = () => {
-    setShowBankerModal(false)
+    setShowBankerModal(false);
     addToast({
-      type: 'info',
-      title: 'Deal Rejected',
-      message: 'Continue playing to the final reveal!'
-    })
-  }
+      type: "info",
+      title: "Deal Rejected",
+      message: "Continue playing to the final reveal!",
+    });
+  };
 
   const handleFinalReveal = async (swap: boolean) => {
     try {
-      setActionLoading(true)
+      setActionLoading(true);
 
       // Simulate API call
       setTimeout(() => {
-        const playerCard = gameState?.cards.find(c => c.idx === gameState.player_case)
-        const otherCard = gameState?.cards.find(c => c.idx !== gameState.player_case && !c.revealed)
+        const playerCard = gameState?.cards.find(
+          (c) => c.idx === gameState.player_case
+        );
+        const otherCard = gameState?.cards.find(
+          (c) => c.idx !== gameState.player_case && !c.revealed
+        );
 
-        const finalCard = swap ? otherCard : playerCard
+        const finalCard = swap ? otherCard : playerCard;
 
-        setGameState(prev => prev ? {
-          ...prev,
-          cards: prev.cards.map(c =>
-            c.idx === finalCard?.idx ? { ...c, revealed: true } : c
-          ),
-          final_won_cents: finalCard?.value_cents || 0,
-          status: 'FINISHED'
-        } : null)
+        setGameState((prev) =>
+          prev
+            ? {
+                ...prev,
+                cards: prev.cards.map((c) =>
+                  c.idx === finalCard?.idx ? { ...c, revealed: true } : c
+                ),
+                final_won_cents: finalCard?.value_cents || 0,
+                status: "FINISHED",
+              }
+            : null
+        );
 
         addToast({
-          type: 'success',
-          title: 'Demo Complete!',
-          message: `You won ${formatCurrency(finalCard?.value_cents || 0)}! Sign up to play for real.`
-        })
-      }, 500)
+          type: "success",
+          title: "Demo Complete!",
+          message: `You won ${formatCurrency(finalCard?.value_cents || 0)}! Sign up to play for real.`,
+        });
+      }, 500);
     } catch (error) {
       addToast({
-        type: 'error',
-        title: 'Failed to Reveal',
-        message: 'Please try again'
-      })
+        type: "error",
+        title: "Failed to Reveal",
+        message: "Please try again",
+      });
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const resetDemo = () => {
-    setGameState(null)
-    setGameStarted(false)
-    setShowBankerModal(false)
-    setActionLoading(false)
-  }
+    setGameState(null);
+    setGameStarted(false);
+    setShowBankerModal(false);
+    setActionLoading(false);
+  };
 
   if (!gameStarted) {
     return (
@@ -225,11 +259,10 @@ export default function DemoPage() {
 
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              Demo Mode
-            </h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-6">Demo Mode</h1>
             <p className="text-xl text-gray-600 mb-8">
-              Try Deal or No Deal without signing up! This is a fully functional demo with simulated gameplay.
+              Try Deal Master without signing up! This is a fully functional
+              demo with simulated gameplay.
             </p>
 
             <Card className="max-w-2xl mx-auto mb-8">
@@ -243,7 +276,9 @@ export default function DemoPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Choose Your Case</h3>
-                    <p className="text-gray-600">Select one of 5 cases to keep throughout the game.</p>
+                    <p className="text-gray-600">
+                      Select one of 5 cases to keep throughout the game.
+                    </p>
                   </div>
                 </div>
 
@@ -253,7 +288,10 @@ export default function DemoPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Burn Cases</h3>
-                    <p className="text-gray-600">Reveal and remove other cases to narrow down the possibilities.</p>
+                    <p className="text-gray-600">
+                      Reveal and remove other cases to narrow down the
+                      possibilities.
+                    </p>
                   </div>
                 </div>
 
@@ -263,7 +301,10 @@ export default function DemoPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Banker's Offers</h3>
-                    <p className="text-gray-600">The banker will make offers based on remaining cases. Accept or continue playing.</p>
+                    <p className="text-gray-600">
+                      The banker will make offers based on remaining cases.
+                      Accept or continue playing.
+                    </p>
                   </div>
                 </div>
 
@@ -273,7 +314,10 @@ export default function DemoPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Final Decision</h3>
-                    <p className="text-gray-600">When only 2 cases remain, choose to keep your case or swap with the other.</p>
+                    <p className="text-gray-600">
+                      When only 2 cases remain, choose to keep your case or swap
+                      with the other.
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -293,7 +337,7 @@ export default function DemoPage() {
               <div>
                 <Button
                   variant="outline"
-                  onClick={() => router.push('/')}
+                  onClick={() => router.push("/")}
                   className="flex items-center space-x-2 mx-auto"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -304,7 +348,7 @@ export default function DemoPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   const unrevealedCount = gameState?.cards.filter(c => !c.revealed).length || 0

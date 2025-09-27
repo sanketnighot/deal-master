@@ -56,7 +56,11 @@ export function WinModal({
             )}
           </div>
           <CardTitle className="text-2xl font-bold">
-            {isProfit ? 'Congratulations!' : isBreakEven ? 'Game Complete!' : 'Better Luck Next Time!'}
+            {isProfit
+              ? "Congratulations!"
+              : isBreakEven
+                ? "Game Complete!"
+                : "Better Luck Next Time!"}
           </CardTitle>
         </CardHeader>
 
@@ -71,10 +75,14 @@ export function WinModal({
 
             <div className="flex justify-center items-center space-x-4 text-sm">
               <div className="text-gray-600">
-                Entry Fee: <span className="font-medium">{formatCurrency(entryFee)}</span>
+                Entry Fee:{" "}
+                <span className="font-medium">{formatCurrency(entryFee)}</span>
               </div>
-              <div className={`font-bold ${isProfit ? 'text-green-600' : isBreakEven ? 'text-yellow-600' : 'text-red-600'}`}>
-                {isProfit ? '+' : ''}{formatCurrency(profit)}
+              <div
+                className={`font-bold ${isProfit ? "text-green-600" : isBreakEven ? "text-yellow-600" : "text-red-600"}`}
+              >
+                {isProfit ? "+" : ""}
+                {formatCurrency(profit)}
               </div>
             </div>
           </div>
@@ -106,16 +114,12 @@ export function WinModal({
           </div>
 
           <div className="flex space-x-3">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
+            <Button variant="outline" onClick={onClose} className="flex-1">
               Close
             </Button>
             {onPlayAgain && (
               <Button
-                variant="primary"
+                variant="outline"
                 onClick={onPlayAgain}
                 className="flex-1"
               >
@@ -126,5 +130,5 @@ export function WinModal({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

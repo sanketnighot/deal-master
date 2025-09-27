@@ -39,9 +39,7 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
         <CardTitle className="text-2xl font-bold text-gray-900">
           Welcome to Deal Master
         </CardTitle>
-        <p className="text-gray-600">
-          Sign in to start playing Deal or No Deal
-        </p>
+        <p className="text-gray-600">Sign in to start playing Deal Master</p>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -53,11 +51,11 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
 
         <div className="space-y-3">
           <Button
-            variant="primary"
+            variant="outline"
             size="lg"
             onClick={handleSignIn}
             loading={isLoading}
-            className="w-full flex items-center justify-center space-x-2 text-black"
+            className="w-full flex items-center justify-center space-x-2"
           >
             <LogIn className="h-5 w-5" />
             <span>Sign In</span>

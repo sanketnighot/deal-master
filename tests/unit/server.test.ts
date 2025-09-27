@@ -33,11 +33,11 @@ describe('Server Utilities', () => {
   })
 
   describe('shouldBankerOffer', () => {
-    it('should return true for 1, 2, and 3 burned cards', () => {
-      expect(shouldBankerOffer(1)).toBe(true)
-      expect(shouldBankerOffer(2)).toBe(true)
-      expect(shouldBankerOffer(3)).toBe(true)
-    })
+    it("should return true for 2 and 3 burned cards", () => {
+      expect(shouldBankerOffer(1)).toBe(false);
+      expect(shouldBankerOffer(2)).toBe(true);
+      expect(shouldBankerOffer(3)).toBe(true);
+    });
 
     it('should return false for other counts', () => {
       expect(shouldBankerOffer(0)).toBe(false)
@@ -48,12 +48,47 @@ describe('Server Utilities', () => {
 
   describe('getRemainingValues', () => {
     const mockCards = [
-      { idx: 0, value_cents: 1000, revealed: false, burned: false },
-      { idx: 1, value_cents: 2000, revealed: true, burned: true },
-      { idx: 2, value_cents: 3000, revealed: false, burned: false },
-      { idx: 3, value_cents: 4000, revealed: true, burned: false },
-      { idx: 4, value_cents: 5000, revealed: false, burned: false },
-    ]
+      {
+        id: "1",
+        game_id: "game1",
+        idx: 0,
+        value_cents: 1000,
+        revealed: false,
+        burned: false,
+      },
+      {
+        id: "2",
+        game_id: "game1",
+        idx: 1,
+        value_cents: 2000,
+        revealed: true,
+        burned: true,
+      },
+      {
+        id: "3",
+        game_id: "game1",
+        idx: 2,
+        value_cents: 3000,
+        revealed: false,
+        burned: false,
+      },
+      {
+        id: "4",
+        game_id: "game1",
+        idx: 3,
+        value_cents: 4000,
+        revealed: true,
+        burned: false,
+      },
+      {
+        id: "5",
+        game_id: "game1",
+        idx: 4,
+        value_cents: 5000,
+        revealed: false,
+        burned: false,
+      },
+    ];
 
     it('should return values of unrevealed cards excluding player case', () => {
       const playerCase = 2

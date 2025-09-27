@@ -61,9 +61,9 @@ export function BankerModal({
 
             <div className="flex gap-3">
               <Button
-                variant="primary"
+                variant="outline"
                 size="lg"
-                className="flex-1 text-black"
+                className="flex-1"
                 onClick={onAccept}
                 loading={loading}
               >

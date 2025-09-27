@@ -1,41 +1,44 @@
 // API client for game operations
 export interface Game {
-  id: string
-  user_id: string
-  entry_fee_cents: number
-  currency: string
-  created_at: string
-  status: 'CREATED' | 'PLAYING' | 'FINISHED' | 'CANCELLED'
-  player_case: number | null
-  banker_offer_cents: number | null
-  accepted_deal: boolean
-  final_won_cents: number | null
-  cards?: Card[]
-  moves?: Move[]
+  id: string;
+  user_id: string; // wallet address
+  entry_fee_cents: number;
+  currency: string;
+  created_at: string;
+  status: "CREATED" | "PLAYING" | "FINISHED" | "CANCELLED";
+  player_case: number | null;
+  banker_offer_cents: number | null;
+  accepted_deal: boolean;
+  final_won_cents: number | null;
+  payment_tx_hash: string | null;
+  prize_distributed: boolean;
+  prize_tx_hash: string | null;
+  cards?: Card[];
+  moves?: Move[];
 }
 
 export interface Card {
-  idx: number
-  value_cents: number
-  revealed: boolean
-  burned: boolean
+  idx: number;
+  value_cents: number;
+  revealed: boolean;
+  burned: boolean;
 }
 
 export interface Move {
-  action: string
-  payload: any
-  created_at: string
+  action: string;
+  payload: any;
+  created_at: string;
 }
 
 export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
 }
 
 // Base API URL
-const API_BASE = '/api'
+const API_BASE = "/api";
 
 // Generic API call function
 async function apiCall<T>(
@@ -207,16 +210,26 @@ export function useGameApi() {
     if (!isAuthenticated) {
       throw new Error("Not authenticated");
     }
-    return authenticatedFetch(`/api/games?page=${page}&limit=${limit}`).then((res) => res.json());
+    return authenticatedFetch(`/api/games?page=${page}&limit=${limit}`).then(
+      (res) => res.json()
+    );
   };
 
-  const createGame = async (entryFeeCents: number) => {
+  const createGame = async (
+    entryFeeCents: number,
+    paymentTxHash?: string,
+    userAddress?: string
+  ) => {
     if (!isAuthenticated) {
       throw new Error("Not authenticated");
     }
     return authenticatedFetch("/api/game/create", {
       method: "POST",
-      body: JSON.stringify({ entryFeeCents }),
+      body: JSON.stringify({
+        entryFeeCents,
+        paymentTxHash,
+        userAddress,
+      }),
     }).then((res) => res.json());
   };
 
@@ -267,6 +280,16 @@ export function useGameApi() {
     }).then((res) => res.json());
   };
 
+  const distributePrize = async (gameId: string, prizeAmountCents: number) => {
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+    return authenticatedFetch(`/api/game/${gameId}/distributePrize`, {
+      method: "POST",
+      body: JSON.stringify({ prizeAmountCents }),
+    }).then((res) => res.json());
+  };
+
   return {
     getGames,
     createGame,
@@ -276,8 +299,10 @@ export function useGameApi() {
     burnCase,
     acceptDeal,
     finalReveal,
+    distributePrize,
   };
 }
 
 // Import useAuth from AuthContext
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from "@/contexts/AuthContext";
+

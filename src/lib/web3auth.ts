@@ -5,12 +5,12 @@ export const web3authConfig = {
     web3AuthNetwork: "sapphire_devnet" as const, // Use 'sapphire_mainnet' for production
     chainConfig: {
       chainNamespace: "eip155" as const,
-      chainId: "0x1", // Ethereum mainnet
-      rpcTarget: "https://rpc.ankr.com/eth",
-      displayName: "Ethereum Mainnet",
-      blockExplorerUrl: "https://etherscan.io",
+      chainId: "0xaa36a7", // Ethereum Sepolia testnet
+      rpcTarget: `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+      displayName: "Ethereum Sepolia",
+      blockExplorerUrl: "https://sepolia.etherscan.io",
       ticker: "ETH",
-      tickerName: "Ethereum",
+      tickerName: "Ethereum Sepolia",
     },
     uiConfig: {
       appName: "Deal Master",

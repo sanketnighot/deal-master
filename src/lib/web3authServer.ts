@@ -73,13 +73,13 @@ export async function verifyWeb3AuthToken(token: string): Promise<Web3AuthVerifi
     const web3AuthPayload = payload as Web3AuthTokenPayload;
 
     // Debug: Log the payload to understand its structure
-    // console.log("Web3Auth payload:", JSON.stringify(web3AuthPayload, null, 2));
+    console.log("Web3Auth payload:", JSON.stringify(web3AuthPayload, null, 2));
 
     // Extract user identifier - use wallet address from wallets array
     let user_id =
       web3AuthPayload.wallet_address || web3AuthPayload.public_address;
 
-    // If no direct wallet address, extract from wallets array
+    // If no direct wallet address, extract from wallets array and convert to address
     if (
       !user_id &&
       web3AuthPayload.wallets &&
@@ -90,11 +90,43 @@ export async function verifyWeb3AuthToken(token: string): Promise<Web3AuthVerifi
         (w) => w.curve === "secp256k1"
       );
       if (ethWallet) {
-        user_id = ethWallet.public_key;
+        // Convert public key to Ethereum address
+        try {
+          const { ethers } = await import('ethers');
+          let cleanKey = ethWallet.public_key.startsWith("04") 
+            ? ethWallet.public_key.slice(2) 
+            : ethWallet.public_key;
+          if (!cleanKey.startsWith("0x")) {
+            cleanKey = "0x" + cleanKey;
+          }
+          user_id = ethers.computeAddress(cleanKey).toLowerCase();
+          console.log("Converted public key to address:", ethWallet.public_key, "->", user_id);
+        } catch (error) {
+          console.error("Failed to convert public key to address:", error);
+          user_id = ethWallet.public_key;
+        }
       } else {
         // Fallback to first wallet
-        user_id = web3AuthPayload.wallets[0].public_key;
+        const firstWallet = web3AuthPayload.wallets[0];
+        try {
+          const { ethers } = await import('ethers');
+          let cleanKey = firstWallet.public_key.startsWith("04") 
+            ? firstWallet.public_key.slice(2) 
+            : firstWallet.public_key;
+          if (!cleanKey.startsWith("0x")) {
+            cleanKey = "0x" + cleanKey;
+          }
+          user_id = ethers.computeAddress(cleanKey).toLowerCase();
+        } catch (error) {
+          console.error("Failed to convert public key to address:", error);
+          user_id = firstWallet.public_key;
+        }
       }
+    }
+
+    // Ensure user_id is lowercase for consistency
+    if (user_id && user_id.startsWith('0x')) {
+      user_id = user_id.toLowerCase();
     }
 
     // Final fallback to verifierId
@@ -122,6 +154,77 @@ export async function verifyWeb3AuthToken(token: string): Promise<Web3AuthVerifi
 }
 
 /**
+ * Verify wallet signature authentication
+ * @param walletToken - Format: wallet:address:timestamp:signature
+ * @returns Verification result
+ */
+export async function verifyWalletSignature(walletToken: string): Promise<Web3AuthVerificationResult> {
+  try {
+    const parts = walletToken.split(':');
+    if (parts.length !== 4 || parts[0] !== 'wallet') {
+      return {
+        valid: false,
+        user_id: '',
+        error: 'Invalid wallet token format'
+      };
+    }
+
+    const [, address, timestamp, signature] = parts;
+    
+    // Check if timestamp is recent (within 10 minutes)
+    const tokenTime = parseInt(timestamp);
+    const now = Date.now();
+    const maxAge = 10 * 60 * 1000; // 10 minutes
+    
+    if (now - tokenTime > maxAge) {
+      return {
+        valid: false,
+        user_id: '',
+        error: 'Wallet signature expired'
+      };
+    }
+    
+    // Verify the signature
+    const message = `Deal Master Authentication\nAddress: ${address}\nTimestamp: ${timestamp}`;
+    
+    try {
+      const { ethers } = await import('ethers');
+      const recoveredAddress = ethers.verifyMessage(message, signature);
+      
+      if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
+        return {
+          valid: false,
+          user_id: '',
+          error: 'Invalid wallet signature'
+        };
+      }
+      
+      return {
+        valid: true,
+        user_id: address.toLowerCase(),
+        wallet_address: address.toLowerCase()
+      };
+      
+    } catch (error) {
+      console.error('Signature verification failed:', error);
+      return {
+        valid: false,
+        user_id: '',
+        error: 'Signature verification failed'
+      };
+    }
+    
+  } catch (error) {
+    console.error('Wallet token verification failed:', error);
+    return {
+      valid: false,
+      user_id: '',
+      error: 'Wallet token verification failed'
+    };
+  }
+}
+
+/**
  * Middleware helper to extract and verify Web3Auth token from request headers
  * @param authHeader - Authorization header value
  * @returns Verification result
@@ -135,6 +238,35 @@ export async function verifyAuthHeader(authHeader: string | null): Promise<Web3A
     }
   }
 
+  // Remove 'Bearer ' prefix if present
+  const cleanToken = authHeader.replace(/^Bearer\s+/i, "");
+  
+  // Check if it's a wallet signature token
+  if (cleanToken.startsWith('wallet:')) {
+    return verifyWalletSignature(cleanToken);
+  }
+  
+  // Check if it's a simple wallet token
+  if (cleanToken.startsWith('simple-wallet:')) {
+    const walletAddress = cleanToken.replace('simple-wallet:', '');
+    
+    // Basic validation of wallet address format
+    if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+      return {
+        valid: false,
+        user_id: '',
+        error: 'Invalid wallet address format'
+      };
+    }
+    
+    return {
+      valid: true,
+      user_id: walletAddress.toLowerCase(),
+      wallet_address: walletAddress.toLowerCase()
+    };
+  }
+  
+  // Otherwise, treat it as a JWT token
   return verifyWeb3AuthToken(authHeader)
 }
 

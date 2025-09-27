@@ -38,12 +38,11 @@ export default function Home() {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Deal or No Deal
-          </h1>
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">Deal Master</h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Experience the thrill of the classic game with Web3 authentication.
-            Choose your case, burn others, and decide when to take the banker's offer!
+            Choose your case, burn others, and decide when to take the banker's
+            offer!
           </p>
 
           {/* Login Form */}
@@ -56,7 +55,7 @@ export default function Home() {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => router.push('/demo')}
+              onClick={() => router.push("/demo")}
               className="flex items-center space-x-2 mx-auto"
             >
               <Play className="h-5 w-5" />
@@ -76,7 +75,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Login with your wallet or Google account using Web3Auth for secure, decentralized authentication.
+                Login with your wallet or Google account using Web3Auth for
+                secure, decentralized authentication.
               </p>
             </CardContent>
           </Card>
@@ -90,7 +90,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Experience the authentic Deal or No Deal gameplay with 5 cases, banker offers, and strategic decisions.
+                Experience the authentic Deal Master gameplay with 5 cases,
+                banker offers, and strategic decisions.
               </p>
             </CardContent>
           </Card>
@@ -104,7 +105,8 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Server-side game logic ensures fair play with cryptographically secure randomness and transparent rules.
+                Server-side game logic ensures fair play with cryptographically
+                secure randomness and transparent rules.
               </p>
             </CardContent>
           </Card>
@@ -124,7 +126,9 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Choose Your Case</h3>
-                    <p className="text-gray-600">Select one of 5 cases to keep throughout the game.</p>
+                    <p className="text-gray-600">
+                      Select one of 5 cases to keep throughout the game.
+                    </p>
                   </div>
                 </div>
 
@@ -134,7 +138,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Burn Cases</h3>
-                    <p className="text-gray-600">Reveal and remove other cases to narrow down the possibilities.</p>
+                    <p className="text-gray-600">
+                      Reveal and remove other cases to narrow down the
+                      possibilities.
+                    </p>
                   </div>
                 </div>
 
@@ -144,7 +151,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Banker's Offers</h3>
-                    <p className="text-gray-600">The banker will make offers based on remaining cases. Accept or continue playing.</p>
+                    <p className="text-gray-600">
+                      The banker will make offers based on remaining cases.
+                      Accept or continue playing.
+                    </p>
                   </div>
                 </div>
 
@@ -154,7 +164,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-semibold">Final Decision</h3>
-                    <p className="text-gray-600">When only 2 cases remain, choose to keep your case or swap with the other.</p>
+                    <p className="text-gray-600">
+                      When only 2 cases remain, choose to keep your case or swap
+                      with the other.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -163,5 +176,5 @@ export default function Home() {
         </div>
       </div>
     </div>
-  )
+  );
 }

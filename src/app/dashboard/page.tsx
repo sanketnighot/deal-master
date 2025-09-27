@@ -1,12 +1,14 @@
 'use client'
 
-import { TopBar } from '@/components/layout/TopBar'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { useToast } from '@/components/ui/Toast'
-import { useAuth } from '@/contexts/AuthContext'
+import { TopBar } from "@/components/layout/TopBar";
+import { PYUSDPaymentModal } from "@/components/payment/PYUSDPaymentModal";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGameApi } from "@/lib/api";
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { ENTRY_FEE_CENTS, MAX_PRIZE_CENTS } from "@/lib/config";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,29 +17,30 @@ import {
   Plus,
   Trophy,
 } from "lucide-react";
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // Disable static generation for this page
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 interface Game {
-  id: string
-  status: string
-  entry_fee_cents: number
-  created_at: string
-  final_won_cents?: number
-  banker_offer_cents?: number
+  id: string;
+  status: string;
+  entry_fee_cents: number;
+  created_at: string;
+  final_won_cents?: number;
+  banker_offer_cents?: number;
 }
 
 export default function Dashboard() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, walletAddress, authenticatedFetch } = useAuth();
   const { createGame, getGames } = useGameApi();
   const router = useRouter();
   const { addToast } = useToast();
   const [games, setGames] = useState<Game[]>([]);
   const [loadingGames, setLoadingGames] = useState(true);
   const [creatingGame, setCreatingGame] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -86,10 +89,28 @@ export default function Dashboard() {
     }
   }, [isAuthenticated]);
 
-  const handleCreateGame = async () => {
+  const handleCreateGame = () => {
+    if (!walletAddress) {
+      addToast({
+        type: "error",
+        title: "Wallet Not Connected",
+        message: "Please connect your wallet to create a game",
+      });
+      return;
+    }
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async (txHash: string, walletAddress: string) => {
     try {
       setCreatingGame(true);
-      const response = await createGame(2000); // $20 entry fee
+      setShowPaymentModal(false);
+
+      const response = await createGame(
+        ENTRY_FEE_CENTS,
+        txHash,
+        walletAddress
+      );
 
       if (response.success) {
         addToast({
@@ -122,6 +143,28 @@ export default function Dashboard() {
     router.push(`/game/${gameId}`);
   };
 
+  const handleDebugUserId = async () => {
+    try {
+      const response = await authenticatedFetch(
+        `/api/debug/user-id?walletAddress=${walletAddress}`
+      );
+      const result = await response.json();
+      console.log("Debug User ID Result:", result);
+      addToast({
+        type: "info",
+        title: "Debug Info",
+        message: "Check console for debug information",
+      });
+    } catch (error) {
+      console.error("Debug error:", error);
+      addToast({
+        type: "error",
+        title: "Debug Failed",
+        message: "Check console for error details",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -142,7 +185,7 @@ export default function Dashboard() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Games</h1>
           <p className="text-gray-600">
-            Manage your Deal or No Deal games and track your winnings
+            Manage your Deal Master games and track your winnings
           </p>
         </div>
 
@@ -155,20 +198,38 @@ export default function Dashboard() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     Start a New Game
                   </h3>
-                  <p className="text-gray-600">
-                    Create a new Deal or No Deal game with a custom entry fee
+                  <p className="text-gray-600 mb-2">
+                    Create a new Deal Master game with PYUSD payment
                   </p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <span>
+                      💰 Entry Fee: {formatCurrency(ENTRY_FEE_CENTS)} PYUSD
+                    </span>
+                    <span>
+                      🏆 Max Prize: {formatCurrency(MAX_PRIZE_CENTS)} PYUSD
+                    </span>
+                  </div>
                 </div>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={handleCreateGame}
-                  loading={creatingGame}
-                  className="flex items-center space-x-2 text-black"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span>New Game</span>
-                </Button>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleCreateGame}
+                    loading={creatingGame}
+                    className="flex items-center space-x-2"
+                  >
+                    <Plus className="h-5 w-5" />
+                    <span>New Game</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    onClick={handleDebugUserId}
+                    className="flex items-center space-x-2"
+                  >
+                    <span>Debug</span>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -199,7 +260,7 @@ export default function Dashboard() {
                   No Games Yet
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Create your first game to start playing Deal or No Deal!
+                  Create your first game to start playing Deal Master!
                 </p>
                 <Button
                   variant="primary"
@@ -411,6 +472,14 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+
+      {/* PYUSD Payment Modal */}
+      <PYUSDPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={handlePaymentSuccess}
+        entryFeeCents={ENTRY_FEE_CENTS}
+      />
     </div>
   );
 }

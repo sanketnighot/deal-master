@@ -104,10 +104,10 @@ export function GameControls({
               {formatCurrency(bankerOffer)}
             </div>
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={onAcceptDeal}
               loading={loading}
-              className="w-full text-black"
+              className="w-full"
             >
               Accept Deal
             </Button>
@@ -134,10 +134,10 @@ export function GameControls({
               {formatCurrency(bankerOffer)}
             </div>
             <Button
-              variant="primary"
+              variant="outline"
               onClick={onAcceptDeal}
               loading={loading}
-              className="w-full text-black"
+              className="w-full"
             >
               Accept Deal
             </Button>
