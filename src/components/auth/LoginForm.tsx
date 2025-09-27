@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/contexts/AuthContext'
-import { Mail, Wallet } from 'lucide-react'
+import { LogIn } from 'lucide-react'
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -12,12 +12,12 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess, className }: LoginFormProps) {
-  const { loginWithGoogle, loginWithWallet, isLoading, error } = useAuth()
+  const { connect, isLoading, connectError } = useAuth()
   const { addToast } = useToast()
 
-  const handleGoogleLogin = async () => {
+  const handleSignIn = async () => {
     try {
-      await loginWithGoogle()
+      await connect()
       addToast({
         type: 'success',
         title: 'Login Successful',
@@ -28,25 +28,7 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
       addToast({
         type: 'error',
         title: 'Login Failed',
-        message: error instanceof Error ? error.message : 'Failed to login with Google'
-      })
-    }
-  }
-
-  const handleWalletLogin = async () => {
-    try {
-      await loginWithWallet()
-      addToast({
-        type: 'success',
-        title: 'Login Successful',
-        message: 'Welcome to Deal Master!'
-      })
-      onSuccess?.()
-    } catch (error) {
-      addToast({
-        type: 'error',
-        title: 'Login Failed',
-        message: error instanceof Error ? error.message : 'Failed to login with wallet'
+        message: error instanceof Error ? error.message : 'Failed to sign in'
       })
     }
   }
@@ -63,9 +45,9 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {error && (
+        {connectError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-800">{error}</p>
+            <p className="text-sm text-red-800">{connectError.message}</p>
           </div>
         )}
 
@@ -73,23 +55,12 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
           <Button
             variant="primary"
             size="lg"
-            onClick={handleGoogleLogin}
+            onClick={handleSignIn}
             loading={isLoading}
             className="w-full flex items-center justify-center space-x-2"
           >
-            <Mail className="h-5 w-5" />
-            <span>Continue with Google</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleWalletLogin}
-            loading={isLoading}
-            className="w-full flex items-center justify-center space-x-2"
-          >
-            <Wallet className="h-5 w-5" />
-            <span>Connect Wallet</span>
+            <LogIn className="h-5 w-5" />
+            <span>Sign In</span>
           </Button>
         </div>
 

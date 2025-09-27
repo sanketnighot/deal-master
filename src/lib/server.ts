@@ -57,10 +57,10 @@ export function calculateBankerOffer(remainingValues: number[]): number {
 
 /**
  * Check if banker should make an offer based on game state
- * Banker offers after 1, 2, and 3 cards are burned
+ * Banker offers after 2nd burn, optionally after 3rd burn
  */
 export function shouldBankerOffer(burnedCount: number): boolean {
-  return burnedCount === 1 || burnedCount === 2 || burnedCount === 3
+  return burnedCount === 2 || burnedCount === 3
 }
 
 /**
@@ -114,6 +114,7 @@ export function validateGameState(game: any, operation: string): { valid: boolea
       if (game.accepted_deal) {
         return { valid: false, error: 'Cannot reveal after accepting deal' }
       }
+      // Additional validation will be done in the route handler to check card count
       break
   }
 

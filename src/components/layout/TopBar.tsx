@@ -1,25 +1,23 @@
 'use client'
 
-import React from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/Button'
-import { formatCurrency } from '@/lib/utils'
-import { LogOut, User, Wallet } from 'lucide-react'
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/contexts/AuthContext";
+import { LogOut, User, Wallet } from "lucide-react";
 
 interface TopBarProps {
   className?: string
 }
 
 export function TopBar({ className }: TopBarProps) {
-  const { user, isAuthenticated, logout, isLoading } = useAuth()
+  const { user, isAuthenticated, disconnect, isLoading } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await logout()
+      await disconnect();
     } catch (error) {
-      console.error('Logout failed:', error)
+      console.error("Logout failed:", error);
     }
-  }
+  };
 
   return (
     <header className={`bg-white border-b border-gray-200 ${className}`}>
@@ -27,9 +25,7 @@ export function TopBar({ className }: TopBarProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900">
-              Deal Master
-            </h1>
+            <h1 className="text-xl font-bold text-gray-900">Deal Master</h1>
           </div>
 
           {/* User Info */}
@@ -48,17 +44,18 @@ export function TopBar({ className }: TopBarProps) {
                       <User className="h-4 w-4" />
                       <span className="hidden sm:inline">{user.email}</span>
                     </>
-                  ) : user.walletAddress ? (
+                  ) : (user as any).verifierId ? (
                     <>
                       <Wallet className="h-4 w-4" />
                       <span className="hidden sm:inline font-mono text-xs">
-                        {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                        {(user as any).verifierId.slice(0, 6)}...
+                        {(user as any).verifierId.slice(-4)}
                       </span>
                     </>
                   ) : (
                     <>
                       <User className="h-4 w-4" />
-                      <span className="hidden sm:inline">{user.id}</span>
+                      <span className="hidden sm:inline">User</span>
                     </>
                   )}
                 </div>
@@ -75,13 +72,11 @@ export function TopBar({ className }: TopBarProps) {
                 </Button>
               </div>
             ) : (
-              <div className="text-sm text-gray-500">
-                Not logged in
-              </div>
+              <div className="text-sm text-gray-500">Not logged in</div>
             )}
           </div>
         </div>
       </div>
     </header>
-  )
+  );
 }

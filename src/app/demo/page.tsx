@@ -12,6 +12,9 @@ import { ArrowLeft, DollarSign, Play, Trophy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+
 interface GameState {
   id: string
   status: string

@@ -10,6 +10,7 @@ interface GameCardProps {
   isPlayerCase: boolean
   onClick?: () => void
   disabled?: boolean
+  gameFinished?: boolean
 }
 
 export function GameCard({
@@ -19,7 +20,8 @@ export function GameCard({
   burned,
   isPlayerCase,
   onClick,
-  disabled = false
+  disabled = false,
+  gameFinished = false
 }: GameCardProps) {
   const getCardContent = () => {
     if (revealed) {
@@ -46,6 +48,11 @@ export function GameCard({
           <div className="text-xs text-primary-500 mt-1">
             Case {idx + 1}
           </div>
+          {gameFinished && (
+            <div className="text-xs text-primary-400 mt-1">
+              {formatCurrency(value)}
+            </div>
+          )}
         </div>
       )
     }
@@ -56,7 +63,7 @@ export function GameCard({
           Case {idx + 1}
         </div>
         <div className="text-xs text-gray-500 mt-1">
-          Click to reveal
+          {gameFinished ? formatCurrency(value) : 'Click to reveal'}
         </div>
       </div>
     )
@@ -86,13 +93,13 @@ export function GameCard({
         'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500',
         getCardStyles(),
         {
-          'cursor-pointer': !disabled && !revealed,
+          'cursor-pointer': !disabled && !revealed && !gameFinished,
           'cursor-not-allowed opacity-50': disabled,
-          'cursor-default': revealed,
+          'cursor-default': revealed || gameFinished,
         }
       )}
       onClick={onClick}
-      disabled={disabled || revealed}
+      disabled={disabled || revealed || gameFinished}
       aria-label={
         revealed
           ? `Case ${idx + 1} revealed: ${formatCurrency(value)}`

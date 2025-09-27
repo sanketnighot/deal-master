@@ -8,6 +8,9 @@ import { Play, Shield, Trophy, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()

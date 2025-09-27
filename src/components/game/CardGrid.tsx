@@ -26,7 +26,7 @@ export function CardGrid({
   const sortedCards = [...cards].sort((a, b) => a.idx - b.idx)
 
   return (
-    <div className={cn('grid grid-cols-5 gap-4 max-w-2xl mx-auto', className)}>
+    <div className={cn("grid grid-cols-5 gap-4 max-w-2xl mx-auto", className)}>
       {sortedCards.map((card) => (
         <GameCard
           key={card.idx}
@@ -36,9 +36,10 @@ export function CardGrid({
           burned={card.burned}
           isPlayerCase={card.idx === playerCase}
           onClick={() => onCardClick?.(card.idx)}
-          disabled={gameStatus !== 'PLAYING'}
+          disabled={gameStatus !== "PLAYING"}
+          gameFinished={gameStatus === "FINISHED"}
         />
       ))}
     </div>
-  )
+  );
 }

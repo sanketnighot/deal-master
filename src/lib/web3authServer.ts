@@ -19,15 +19,22 @@ function getJWKS() {
 }
 
 export interface Web3AuthTokenPayload {
-  sub: string
-  email?: string
-  name?: string
-  wallet_address?: string
-  public_address?: string
-  aud: string
-  iss: string
-  iat: number
-  exp: number
+  sub?: string;
+  verifierId?: string;
+  userId?: string;
+  email?: string;
+  name?: string;
+  wallet_address?: string;
+  public_address?: string;
+  wallets?: Array<{
+    public_key: string;
+    type: string;
+    curve: string;
+  }>;
+  aud: string;
+  iss: string;
+  iat: number;
+  exp: number;
 }
 
 export interface Web3AuthVerificationResult {
@@ -48,34 +55,61 @@ export async function verifyWeb3AuthToken(token: string): Promise<Web3AuthVerifi
     if (!token) {
       return {
         valid: false,
-        user_id: '',
-        error: 'No token provided'
-      }
+        user_id: "",
+        error: "No token provided",
+      };
     }
 
     // Remove 'Bearer ' prefix if present
-    const cleanToken = token.replace(/^Bearer\s+/i, '')
+    const cleanToken = token.replace(/^Bearer\s+/i, "");
 
-    const jwks = getJWKS()
+    const jwks = getJWKS();
 
     const { payload } = await jwtVerify(cleanToken, jwks, {
       issuer: WEB3AUTH_ISSUER,
-      audience: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID
-    })
+      audience: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID,
+    });
 
-    const web3AuthPayload = payload as Web3AuthTokenPayload
+    const web3AuthPayload = payload as Web3AuthTokenPayload;
 
-    // Extract user identifier - prefer wallet_address, fallback to sub
-    const user_id = web3AuthPayload.wallet_address ||
-                   web3AuthPayload.public_address ||
-                   `web3auth:${web3AuthPayload.sub}`
+    // Debug: Log the payload to understand its structure
+    // console.log("Web3Auth payload:", JSON.stringify(web3AuthPayload, null, 2));
+
+    // Extract user identifier - use wallet address from wallets array
+    let user_id =
+      web3AuthPayload.wallet_address || web3AuthPayload.public_address;
+
+    // If no direct wallet address, extract from wallets array
+    if (
+      !user_id &&
+      web3AuthPayload.wallets &&
+      web3AuthPayload.wallets.length > 0
+    ) {
+      // Use the first secp256k1 wallet address (Ethereum-compatible)
+      const ethWallet = web3AuthPayload.wallets.find(
+        (w) => w.curve === "secp256k1"
+      );
+      if (ethWallet) {
+        user_id = ethWallet.public_key;
+      } else {
+        // Fallback to first wallet
+        user_id = web3AuthPayload.wallets[0].public_key;
+      }
+    }
+
+    // Final fallback to verifierId
+    if (!user_id) {
+      user_id =
+        web3AuthPayload.verifierId || web3AuthPayload.userId || "unknown";
+    }
 
     return {
       valid: true,
       user_id,
       email: web3AuthPayload.email,
-      wallet_address: web3AuthPayload.wallet_address || web3AuthPayload.public_address
-    }
+      wallet_address:
+        web3AuthPayload.wallet_address || web3AuthPayload.public_address,
+    };
   } catch (error) {
     console.error('Web3Auth token verification failed:', error)
 

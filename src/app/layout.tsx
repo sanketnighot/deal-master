@@ -1,4 +1,5 @@
 import { ToastProvider } from "@/components/ui/Toast";
+import { Web3AuthWrapper } from "@/components/Web3AuthWrapper";
 import { AuthProvider } from "@/contexts/AuthContext";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -16,7 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Deal Master - Deal or No Deal Game",
-  description: "Experience the classic Deal or No Deal game with Web3 authentication. Choose your case, burn others, and decide when to take the banker's offer!",
+  description:
+    "Experience the classic Deal or No Deal game with Web3 authentication. Choose your case, burn others, and decide when to take the banker's offer!",
 };
 
 export default function RootLayout({
@@ -29,11 +31,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </AuthProvider>
+        <Web3AuthWrapper>
+          <AuthProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </AuthProvider>
+        </Web3AuthWrapper>
       </body>
     </html>
   );

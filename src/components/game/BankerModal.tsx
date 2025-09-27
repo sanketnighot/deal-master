@@ -5,21 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { formatCurrency } from '@/lib/utils'
 
 interface BankerModalProps {
-  isOpen: boolean
-  offer: number
-  onAccept: () => void
-  onReject: () => void
-  loading?: boolean
+  isOpen: boolean;
+  offer: number;
+  lastBurnedCase?: { idx: number; value_cents: number } | null;
+  onAccept: () => void;
+  onReject: () => void;
+  loading?: boolean;
 }
 
 export function BankerModal({
   isOpen,
   offer,
+  lastBurnedCase,
   onAccept,
   onReject,
-  loading = false
+  loading = false,
 }: BankerModalProps) {
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -31,6 +33,18 @@ export function BankerModal({
         </CardHeader>
 
         <CardContent className="text-center space-y-6">
+          {lastBurnedCase && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="text-sm font-medium text-red-800 mb-1">
+                Last Case Opened
+              </div>
+              <div className="text-lg font-bold text-red-900">
+                Case {lastBurnedCase.idx + 1}:{" "}
+                {formatCurrency(lastBurnedCase.value_cents)}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <p className="text-gray-600">
               The banker has made you an offer for your case:
@@ -74,5 +88,5 @@ export function BankerModal({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
