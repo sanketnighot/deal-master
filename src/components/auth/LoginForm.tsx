@@ -57,7 +57,7 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
             size="lg"
             onClick={handleSignIn}
             loading={isLoading}
-            className="w-full flex items-center justify-center space-x-2"
+            className="w-full flex items-center justify-center space-x-2 text-black"
           >
             <LogIn className="h-5 w-5" />
             <span>Sign In</span>
@@ -71,5 +71,5 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -63,7 +63,7 @@ export function BankerModal({
               <Button
                 variant="primary"
                 size="lg"
-                className="flex-1"
+                className="flex-1 text-black"
                 onClick={onAccept}
                 loading={loading}
               >

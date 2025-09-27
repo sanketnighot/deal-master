@@ -164,7 +164,7 @@ export default function Dashboard() {
                   size="lg"
                   onClick={handleCreateGame}
                   loading={creatingGame}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 text-black"
                 >
                   <Plus className="h-5 w-5" />
                   <span>New Game</span>

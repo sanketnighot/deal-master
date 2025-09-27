@@ -107,7 +107,7 @@ export function GameControls({
               variant="secondary"
               onClick={onAcceptDeal}
               loading={loading}
-              className="w-full"
+              className="w-full text-black"
             >
               Accept Deal
             </Button>
@@ -137,7 +137,7 @@ export function GameControls({
               variant="primary"
               onClick={onAcceptDeal}
               loading={loading}
-              className="w-full"
+              className="w-full text-black"
             >
               Accept Deal
             </Button>
