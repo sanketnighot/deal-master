@@ -290,6 +290,63 @@ export function useGameApi() {
     }).then((res) => res.json());
   };
 
+  // Contract-specific API functions
+  const selectInitialBox = async (
+    gameId: string,
+    idx: number,
+    web3AuthProvider: any
+  ) => {
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+    return authenticatedFetch(`/api/game/${gameId}/select-initial-box`, {
+      method: "POST",
+      body: JSON.stringify({ idx, web3AuthProvider }),
+    }).then((res) => res.json());
+  };
+
+  const burnBoxContract = async (
+    gameId: string,
+    idx: number,
+    web3AuthProvider: any
+  ) => {
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+    return authenticatedFetch(`/api/game/${gameId}/burn-contract`, {
+      method: "POST",
+      body: JSON.stringify({ idx, web3AuthProvider }),
+    }).then((res) => res.json());
+  };
+
+  const acceptDealContract = async (
+    gameId: string,
+    offerAmount: string,
+    web3AuthProvider: any
+  ) => {
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+    return authenticatedFetch(`/api/game/${gameId}/accept-deal-contract`, {
+      method: "POST",
+      body: JSON.stringify({ offerAmount, web3AuthProvider }),
+    }).then((res) => res.json());
+  };
+
+  const finalSelectionContract = async (
+    gameId: string,
+    keepOriginalBox: boolean,
+    web3AuthProvider: any
+  ) => {
+    if (!isAuthenticated) {
+      throw new Error("Not authenticated");
+    }
+    return authenticatedFetch(`/api/game/${gameId}/final-selection-contract`, {
+      method: "POST",
+      body: JSON.stringify({ keepOriginalBox, web3AuthProvider }),
+    }).then((res) => res.json());
+  };
+
   return {
     getGames,
     createGame,
@@ -300,6 +357,11 @@ export function useGameApi() {
     acceptDeal,
     finalReveal,
     distributePrize,
+    // Contract-specific functions
+    selectInitialBox,
+    burnBoxContract,
+    acceptDealContract,
+    finalSelectionContract,
   };
 }
 

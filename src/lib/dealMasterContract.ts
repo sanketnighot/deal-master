@@ -432,3 +432,119 @@ export function calculateBankerOffer(
     return CONTRACT_CONSTANTS.BOX_VALUES[0]; // Return minimum value as fallback
   }
 }
+
+// Select initial box on smart contract
+export async function selectInitialBox(
+  gameId: number,
+  boxIndex: number,
+  web3AuthProvider: any
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    console.log(`🎯 Selecting initial box ${boxIndex} for game ${gameId}...`);
+
+    const contract = await getDealMasterContractWithSigner(web3AuthProvider);
+    const tx = await contract.selectInitialBox(gameId, boxIndex);
+
+    console.log(`📝 Transaction sent: ${tx.hash}`);
+    await tx.wait();
+
+    console.log(`✅ Initial box selected successfully!`);
+    return {
+      success: true,
+      txHash: tx.hash
+    };
+  } catch (error: any) {
+    console.error(`❌ Error selecting initial box:`, error);
+    return {
+      success: false,
+      error: error.message || "Failed to select initial box"
+    };
+  }
+}
+
+// Burn box on smart contract
+export async function burnBoxOnContract(
+  gameId: number,
+  boxIndex: number,
+  web3AuthProvider: any
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    console.log(`🔥 Burning box ${boxIndex} for game ${gameId}...`);
+
+    const contract = await getDealMasterContractWithSigner(web3AuthProvider);
+    const tx = await contract.burnBox(gameId, boxIndex);
+
+    console.log(`📝 Transaction sent: ${tx.hash}`);
+    await tx.wait();
+
+    console.log(`✅ Box burned successfully!`);
+    return {
+      success: true,
+      txHash: tx.hash
+    };
+  } catch (error: any) {
+    console.error(`❌ Error burning box:`, error);
+    return {
+      success: false,
+      error: error.message || "Failed to burn box"
+    };
+  }
+}
+
+// Accept deal on smart contract
+export async function acceptDealOnContract(
+  gameId: number,
+  offerAmount: string,
+  web3AuthProvider: any
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    console.log(`💰 Accepting deal of ${offerAmount} for game ${gameId}...`);
+
+    const contract = await getDealMasterContractWithSigner(web3AuthProvider);
+    const tx = await contract.acceptDeal(gameId, offerAmount);
+
+    console.log(`📝 Transaction sent: ${tx.hash}`);
+    await tx.wait();
+
+    console.log(`✅ Deal accepted successfully!`);
+    return {
+      success: true,
+      txHash: tx.hash
+    };
+  } catch (error: any) {
+    console.error(`❌ Error accepting deal:`, error);
+    return {
+      success: false,
+      error: error.message || "Failed to accept deal"
+    };
+  }
+}
+
+// Final selection on smart contract
+export async function finalSelectionOnContract(
+  gameId: number,
+  keepOriginalBox: boolean,
+  web3AuthProvider: any
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    console.log(`🎲 Making final selection for game ${gameId}, keep original: ${keepOriginalBox}...`);
+
+    const contract = await getDealMasterContractWithSigner(web3AuthProvider);
+    const tx = await contract.finalSelection(gameId, keepOriginalBox);
+
+    console.log(`📝 Transaction sent: ${tx.hash}`);
+    await tx.wait();
+
+    console.log(`✅ Final selection made successfully!`);
+    return {
+      success: true,
+      txHash: tx.hash
+    };
+  } catch (error: any) {
+    console.error(`❌ Error making final selection:`, error);
+    return {
+      success: false,
+      error: error.message || "Failed to make final selection"
+    };
+  }
+}

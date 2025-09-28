@@ -10,7 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGameApi } from "@/lib/api";
+import { calculateBankerOffer } from "@/lib/dealMasterContract";
 import { formatCurrency } from "@/lib/utils";
+import { useWeb3Auth } from "@web3auth/modal/react";
 import { ArrowLeft, DollarSign, Trophy } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -26,6 +28,9 @@ interface GameState {
   banker_offer_cents: number | null;
   accepted_deal: boolean;
   final_won_cents: number | null;
+  game_mode?: string; // 'legacy' or 'contract'
+  contract_game_id?: number | null;
+  contract_tx_hash?: string | null;
   cards: Array<{
     idx: number;
     value_cents: number;
@@ -36,8 +41,18 @@ interface GameState {
 
 export default function GamePage() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { getGameState, pickCase, burnCase, acceptDeal, finalReveal } =
-    useGameApi();
+  const { web3Auth } = useWeb3Auth();
+  const {
+    getGameState,
+    pickCase,
+    burnCase,
+    acceptDeal,
+    finalReveal,
+    selectInitialBox,
+    burnBoxContract,
+    acceptDealContract,
+    finalSelectionContract,
+  } = useGameApi();
   const router = useRouter();
   const params = useParams();
   const { addToast } = useToast();
@@ -112,65 +127,166 @@ export default function GamePage() {
     }
   };
 
+  // Generate banker offer for contract games
+  const generateBankerOffer = (gameState: GameState): number => {
+    const unrevealedCards = gameState.cards.filter(
+      (card) => !card.revealed && card.idx !== gameState.player_case
+    );
+    const remainingBoxes = unrevealedCards.map((card) => card.idx);
+
+    // Calculate round based on how many boxes have been burned
+    const burnedCount = gameState.cards.filter((card) => card.burned).length;
+    const round = burnedCount + 1; // Round starts from 1
+
+    const offerWei = calculateBankerOffer(
+      remainingBoxes,
+      round,
+      parseInt(gameId)
+    );
+    return parseInt(offerWei) / 10000; // Convert from wei to cents
+  };
+
   const handleCardClick = async (idx: number) => {
     if (!gameState || actionLoading) return;
 
     try {
       setActionLoading(true);
+      const isContractGame = gameState.game_mode === "contract";
 
       if (gameState.player_case === null) {
-        // Pick case
-        const response = await pickCase(gameId, idx);
-        if (response.success) {
-          await loadGameState(); // Reload state
-          addToast({
-            type: "success",
-            title: "Case Selected",
-            message: `You chose Case ${idx + 1}!`,
-          });
+        // Initial box selection
+        if (isContractGame) {
+          const response = await selectInitialBox(
+            gameId,
+            idx,
+            web3Auth?.provider
+          );
+          if (response.success) {
+            await loadGameState(); // Reload state
+            addToast({
+              type: "success",
+              title: "Initial Box Selected",
+              message: `You chose Box ${idx + 1}!`,
+            });
+          } else {
+            addToast({
+              type: "error",
+              title: "Failed to Select Initial Box",
+              message: response.error || "Please try again",
+            });
+          }
         } else {
-          addToast({
-            type: "error",
-            title: "Failed to Pick Case",
-            message: response.error || "Please try again",
-          });
+          // Legacy pick case
+          const response = await pickCase(gameId, idx);
+          if (response.success) {
+            await loadGameState(); // Reload state
+            addToast({
+              type: "success",
+              title: "Case Selected",
+              message: `You chose Case ${idx + 1}!`,
+            });
+          } else {
+            addToast({
+              type: "error",
+              title: "Failed to Pick Case",
+              message: response.error || "Please try again",
+            });
+          }
         }
       } else if (
         gameState.player_case !== idx &&
         !gameState.cards.find((c) => c.idx === idx)?.revealed
       ) {
-        // Burn case
-        const response = await burnCase(gameId, idx);
-        if (response.success) {
-          await loadGameState(); // Reload state
-
-          // Check if game was auto-completed
-          if (response.game_completed) {
+        // Burn case/box
+        if (isContractGame) {
+          const response = await burnBoxContract(
+            gameId,
+            idx,
+            web3Auth?.provider
+          );
+          if (response.success) {
+            await loadGameState(); // Reload state
             addToast({
               type: "success",
-              title: "Game Complete!",
-              message: response.message || "Congratulations!",
+              title: "Box Burned",
+              message: `Box ${idx + 1} burned! Value: ${formatCurrency(
+                response.cardValue || 0
+              )}`,
             });
-            // The win modal will be shown automatically by the useEffect
+
+            // Store the burned case info for the banker modal
+            setLastBurnedCase({
+              idx,
+              value_cents: response.cardValue || 0,
+            });
+
+            // For contract games, generate banker offer if not in final round
+            const remainingUnburned = gameState.cards.filter(
+              (card) =>
+                !card.burned &&
+                !card.revealed &&
+                card.idx !== gameState.player_case
+            ).length;
+
+            if (remainingUnburned > 2) {
+              // More than 2 boxes remaining (player's + 1 other)
+              // Wait a bit for loadGameState to complete, then generate offer
+              setTimeout(async () => {
+                if (gameState) {
+                  const bankerOfferCents = generateBankerOffer(gameState);
+                  setGameState((prev) =>
+                    prev
+                      ? { ...prev, banker_offer_cents: bankerOfferCents }
+                      : prev
+                  );
+                  setShowBankerModal(true);
+                }
+              }, 2000);
+            } else {
+              // Show banker modal without offer for final round
+              setTimeout(() => setShowBankerModal(true), 1500);
+            }
           } else {
             addToast({
-              type: "success",
-              title: "Case Burned",
-              message: response.message || `Case ${idx + 1} burned!`,
+              type: "error",
+              title: "Failed to Burn Box",
+              message: response.error || "Please try again",
             });
-
-            // Show banker modal if offer is available
-            if (response.banker_offer) {
-              setLastBurnedCase(response.burned_case);
-              setShowBankerModal(true);
-            }
           }
         } else {
-          addToast({
-            type: "error",
-            title: "Failed to Burn Case",
-            message: response.error || "Please try again",
-          });
+          // Legacy burn case
+          const response = await burnCase(gameId, idx);
+          if (response.success) {
+            await loadGameState(); // Reload state
+
+            // Check if game was auto-completed
+            if (response.game_completed) {
+              addToast({
+                type: "success",
+                title: "Game Complete!",
+                message: response.message || "Congratulations!",
+              });
+              // The win modal will be shown automatically by the useEffect
+            } else {
+              addToast({
+                type: "success",
+                title: "Case Burned",
+                message: response.message || `Case ${idx + 1} burned!`,
+              });
+
+              // Show banker modal if offer is available
+              if (response.banker_offer) {
+                setLastBurnedCase(response.burned_case);
+                setShowBankerModal(true);
+              }
+            }
+          } else {
+            addToast({
+              type: "error",
+              title: "Failed to Burn Case",
+              message: response.error || "Please try again",
+            });
+          }
         }
       }
     } catch (error) {
@@ -187,22 +303,52 @@ export default function GamePage() {
   const handleAcceptDeal = async () => {
     try {
       setActionLoading(true);
-      const response = await acceptDeal(gameId);
+      const isContractGame = gameState?.game_mode === "contract";
 
-      if (response.success) {
-        await loadGameState(); // Reload state
-        setShowBankerModal(false);
-        addToast({
-          type: "success",
-          title: "Deal Accepted!",
-          message: `You won ${response.final_won_display}!`,
-        });
+      if (isContractGame) {
+        // For contract games, we need to pass the banker offer amount
+        const bankerOfferWei = gameState?.banker_offer_cents
+          ? (gameState.banker_offer_cents * 10000).toString()
+          : "0"; // Convert cents to wei
+
+        const response = await acceptDealContract(
+          gameId,
+          bankerOfferWei,
+          web3Auth?.provider
+        );
+        if (response.success) {
+          await loadGameState(); // Reload state
+          setShowBankerModal(false);
+          addToast({
+            type: "success",
+            title: "Deal Accepted!",
+            message: `You won ${formatCurrency(response.finalAmount || 0)}!`,
+          });
+        } else {
+          addToast({
+            type: "error",
+            title: "Failed to Accept Deal",
+            message: response.error || "Please try again",
+          });
+        }
       } else {
-        addToast({
-          type: "error",
-          title: "Failed to Accept Deal",
-          message: response.error || "Please try again",
-        });
+        // Legacy accept deal
+        const response = await acceptDeal(gameId);
+        if (response.success) {
+          await loadGameState(); // Reload state
+          setShowBankerModal(false);
+          addToast({
+            type: "success",
+            title: "Deal Accepted!",
+            message: `You won ${response.final_won_display}!`,
+          });
+        } else {
+          addToast({
+            type: "error",
+            title: "Failed to Accept Deal",
+            message: response.error || "Please try again",
+          });
+        }
       }
     } catch (error) {
       addToast({
@@ -227,21 +373,48 @@ export default function GamePage() {
   const handleFinalReveal = async (swap: boolean) => {
     try {
       setActionLoading(true);
-      const response = await finalReveal(gameId, swap);
+      const isContractGame = gameState?.game_mode === "contract";
 
-      if (response.success) {
-        await loadGameState(); // Reload state
-        addToast({
-          type: "success",
-          title: "Game Complete!",
-          message: `You won ${response.final_won_display}!`,
-        });
+      if (isContractGame) {
+        // For contract games, use finalSelectionContract
+        const keepOriginalBox = !swap; // swap means switch, so invert it
+        const response = await finalSelectionContract(
+          gameId,
+          keepOriginalBox,
+          web3Auth?.provider
+        );
+
+        if (response.success) {
+          await loadGameState(); // Reload state
+          addToast({
+            type: "success",
+            title: "Game Complete!",
+            message: `You won ${formatCurrency(response.finalAmount || 0)}!`,
+          });
+        } else {
+          addToast({
+            type: "error",
+            title: "Failed to Make Final Selection",
+            message: response.error || "Please try again",
+          });
+        }
       } else {
-        addToast({
-          type: "error",
-          title: "Failed to Reveal",
-          message: response.error || "Please try again",
-        });
+        // Legacy final reveal
+        const response = await finalReveal(gameId, swap);
+        if (response.success) {
+          await loadGameState(); // Reload state
+          addToast({
+            type: "success",
+            title: "Game Complete!",
+            message: `You won ${response.final_won_display}!`,
+          });
+        } else {
+          addToast({
+            type: "error",
+            title: "Failed to Reveal",
+            message: response.error || "Please try again",
+          });
+        }
       }
     } catch (error) {
       addToast({
