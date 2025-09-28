@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { CheckCircle, Trophy, X } from "lucide-react";
+import { Trophy, X } from "lucide-react";
 
 interface WinModalProps {
   isOpen: boolean
@@ -27,59 +27,217 @@ export function WinModal({
   const isBreakEven = profit === 0
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader className="text-center pb-4">
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="p-1 h-8 w-8"
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.9)" }}
+    >
+      <div className="crt-overlay" />
+
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-30">
+        <div
+          className="absolute top-20 left-20 w-3 h-3 animate-text-flicker"
+          style={{
+            backgroundColor: isProfit ? "rgb(0, 255, 0)" : "rgb(255, 0, 0)",
+          }}
+        ></div>
+        <div
+          className="absolute top-40 right-32 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 255, 0)" }}
+        ></div>
+        <div
+          className="absolute bottom-32 left-40 w-2 h-2 animate-text-flicker"
+          style={{ backgroundColor: "rgb(0, 255, 255)" }}
+        ></div>
+        <div
+          className="absolute bottom-20 right-20 w-3 h-3 animate-text-flicker"
+          style={{ backgroundColor: "rgb(255, 0, 255)" }}
+        ></div>
+      </div>
+
+      <Card
+        variant="pixel"
+        className="w-full max-w-lg mx-auto animate-text-flicker relative z-10"
+        style={{
+          backgroundColor: "rgba(28, 0, 51, 0.95)",
+          backdropFilter: "blur(15px)",
+        }}
+      >
+        {/* Close Button */}
+        <div className="absolute top-4 right-4 z-20">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            className="p-2 h-8 w-8 font-pixel"
+            style={{
+              borderColor: "rgb(0, 255, 255)",
+              color: "rgb(0, 255, 255)",
+              backgroundColor: "rgba(0, 255, 255, 0.1)",
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <CardHeader className="text-center pb-6 pt-8">
+          {/* Trophy Icon */}
+          <div className="flex justify-center mb-6">
+            <div
+              className="w-20 h-20 border-4 flex items-center justify-center animate-text-flicker"
+              style={{
+                borderColor: isProfit
+                  ? "rgb(0, 255, 0)"
+                  : isBreakEven
+                    ? "rgb(255, 255, 0)"
+                    : "rgb(255, 0, 0)",
+                backgroundColor: isProfit
+                  ? "rgba(0, 255, 0, 0.1)"
+                  : isBreakEven
+                    ? "rgba(255, 255, 0, 0.1)"
+                    : "rgba(255, 0, 0, 0.1)",
+              }}
             >
-              <X className="h-4 w-4" />
-            </Button>
+              <Trophy
+                className="h-12 w-12"
+                style={{
+                  color: isProfit
+                    ? "rgb(0, 255, 0)"
+                    : isBreakEven
+                      ? "rgb(255, 255, 0)"
+                      : "rgb(255, 0, 0)",
+                }}
+              />
+            </div>
           </div>
-          <div className="flex justify-center mb-4">
-            {isProfit ? (
-              <div className="bg-green-100 rounded-full p-4">
-                <Trophy className="h-12 w-12 text-green-600" />
-              </div>
-            ) : isBreakEven ? (
-              <div className="bg-yellow-100 rounded-full p-4">
-                <CheckCircle className="h-12 w-12 text-yellow-600" />
-              </div>
-            ) : (
-              <div className="bg-red-100 rounded-full p-4">
-                <Trophy className="h-12 w-12 text-red-600" />
-              </div>
-            )}
-          </div>
-          <CardTitle className="text-2xl font-bold">
+
+          {/* Title */}
+          <CardTitle
+            className="text-3xl font-pixel animate-glitch mb-4"
+            style={{
+              color: isProfit
+                ? "rgb(0, 255, 0)"
+                : isBreakEven
+                  ? "rgb(255, 255, 0)"
+                  : "rgb(255, 0, 0)",
+            }}
+          >
             {isProfit
-              ? "Congratulations!"
+              ? "🎉 CONGRATULATIONS!"
               : isBreakEven
-                ? "Game Complete!"
-                : "Better Luck Next Time!"}
+                ? "🎯 GAME COMPLETE!"
+                : "💀 GAME OVER!"}
           </CardTitle>
+
+          {/* Subtitle */}
+          <div
+            className="text-lg font-pixel"
+            style={{ color: "rgb(0, 255, 255)" }}
+          >
+            {isProfit
+              ? "You made a profit!"
+              : isBreakEven
+                ? "You broke even!"
+                : "Better luck next time!"}
+          </div>
         </CardHeader>
 
-        <CardContent className="text-center space-y-6">
-          <div className="space-y-3">
-            <div>
-              <div className="text-sm text-gray-600 mb-1">Final Amount</div>
-              <div className="text-3xl font-bold text-gray-900">
-                {formatCurrency(finalAmount)}
+        <CardContent className="text-center space-y-8 p-8">
+          {/* Final Amount Display */}
+          <div
+            className="border-4 p-6 animate-text-flicker"
+            style={{
+              borderColor: isProfit
+                ? "rgb(0, 255, 0)"
+                : isBreakEven
+                  ? "rgb(255, 255, 0)"
+                  : "rgb(255, 0, 0)",
+              backgroundColor: isProfit
+                ? "rgba(0, 255, 0, 0.1)"
+                : isBreakEven
+                  ? "rgba(255, 255, 0, 0.1)"
+                  : "rgba(255, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              className="text-sm font-pixel mb-3"
+              style={{ color: "rgb(0, 255, 255)" }}
+            >
+              💰 FINAL AMOUNT
+            </div>
+            <div
+              className="text-4xl font-pixel mb-4"
+              style={{ color: "rgb(255, 255, 255)" }}
+            >
+              {formatCurrency(finalAmount)}
+            </div>
+
+            {/* Profit/Loss Indicator */}
+            <div
+              className="text-2xl font-pixel border-t-4 pt-4"
+              style={{
+                borderTopColor: isProfit
+                  ? "rgb(0, 255, 0)"
+                  : isBreakEven
+                    ? "rgb(255, 255, 0)"
+                    : "rgb(255, 0, 0)",
+                color: isProfit
+                  ? "rgb(0, 255, 0)"
+                  : isBreakEven
+                    ? "rgb(255, 255, 0)"
+                    : "rgb(255, 0, 0)",
+              }}
+            >
+              {isProfit ? "📈 +" : isBreakEven ? "➖ " : "📉 "}
+              {formatCurrency(Math.abs(profit))}
+            </div>
+          </div>
+
+          {/* Game Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div
+              className="border-2 p-4"
+              style={{
+                borderColor: "rgba(0, 255, 255, 0.5)",
+                backgroundColor: "rgba(0, 255, 255, 0.05)",
+              }}
+            >
+              <div
+                className="text-xs font-pixel mb-2"
+                style={{ color: "rgb(0, 255, 255)" }}
+              >
+                💳 Entry Fee
+              </div>
+              <div
+                className="text-lg font-pixel"
+                style={{ color: "rgb(255, 255, 255)" }}
+              >
+                {formatCurrency(entryFee)}
               </div>
             </div>
 
-            <div className="flex justify-center items-center space-x-4 text-sm">
-              <div className="text-gray-600">
-                Entry Fee:{" "}
-                <span className="font-medium">{formatCurrency(entryFee)}</span>
+            <div
+              className="border-2 p-4"
+              style={{
+                borderColor: "rgba(255, 0, 255, 0.5)",
+                backgroundColor: "rgba(255, 0, 255, 0.05)",
+              }}
+            >
+              <div
+                className="text-xs font-pixel mb-2"
+                style={{ color: "rgb(255, 0, 255)" }}
+              >
+                {isProfit ? "🏆 Profit" : isBreakEven ? "⚖️ Result" : "💸 Loss"}
               </div>
               <div
-                className={`font-bold ${isProfit ? "text-green-600" : isBreakEven ? "text-yellow-600" : "text-red-600"}`}
+                className="text-lg font-pixel"
+                style={{
+                  color: isProfit
+                    ? "rgb(0, 255, 0)"
+                    : isBreakEven
+                      ? "rgb(255, 255, 0)"
+                      : "rgb(255, 0, 0)",
+                }}
               >
                 {isProfit ? "+" : ""}
                 {formatCurrency(profit)}
@@ -87,43 +245,58 @@ export function WinModal({
             </div>
           </div>
 
-          <div className="space-y-3">
-            {isProfit && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <div className="text-sm font-medium text-green-800">
-                  🎉 You made a profit of {formatCurrency(profit)}!
-                </div>
-              </div>
-            )}
-
-            {isBreakEven && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <div className="text-sm font-medium text-yellow-800">
-                  You broke even! No profit, no loss.
-                </div>
-              </div>
-            )}
-
-            {!isProfit && !isBreakEven && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <div className="text-sm font-medium text-red-800">
-                  You lost {formatCurrency(Math.abs(profit))}. Try again!
-                </div>
-              </div>
-            )}
+          {/* Result Message */}
+          <div
+            className="border-4 p-4 animate-text-flicker"
+            style={{
+              borderColor: isProfit
+                ? "rgb(0, 255, 0)"
+                : isBreakEven
+                  ? "rgb(255, 255, 0)"
+                  : "rgb(255, 0, 0)",
+              backgroundColor: isProfit
+                ? "rgba(0, 255, 0, 0.1)"
+                : isBreakEven
+                  ? "rgba(255, 255, 0, 0.1)"
+                  : "rgba(255, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              className="text-sm font-pixel"
+              style={{
+                color: isProfit
+                  ? "rgb(0, 255, 0)"
+                  : isBreakEven
+                    ? "rgb(255, 255, 0)"
+                    : "rgb(255, 0, 0)",
+              }}
+            >
+              {isProfit &&
+                `🎊 Amazing! You made a profit of ${formatCurrency(profit)}!`}
+              {isBreakEven &&
+                "🎯 Perfect balance! You broke even with no profit or loss."}
+              {!isProfit &&
+                !isBreakEven &&
+                `💪 Don't give up! You lost ${formatCurrency(Math.abs(profit))}, but every game is a new chance!`}
+            </div>
           </div>
 
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Close
+          {/* Action Buttons */}
+          <div className="flex space-x-4 pt-4">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 font-pixel"
+            >
+              CLOSE
             </Button>
             {onPlayAgain && (
               <Button
-                variant="outline"
+                variant={isProfit ? "cyan" : "magenta"}
                 onClick={onPlayAgain}
-                className="flex-1"
+                className="flex-1 font-pixel"
               >
-                Play Again
+                PLAY AGAIN
               </Button>
             )}
           </div>

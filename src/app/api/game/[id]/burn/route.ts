@@ -41,10 +41,10 @@ export async function POST(
     const body = await request.json();
     const { idx } = body;
 
-    // Validate case index
-    if (typeof idx !== "number" || idx < 0 || idx > 4) {
+    // Validate case index (now supports 8 boxes: 0-7)
+    if (typeof idx !== "number" || idx < 0 || idx > 7) {
       return NextResponse.json(
-        { error: "Invalid case index. Must be between 0 and 4." },
+        { error: "Invalid case index. Must be between 0 and 7." },
         { status: 400 }
       );
     }
@@ -144,7 +144,7 @@ export async function POST(
             status: "FINISHED",
           })
           .eq("id", gameId)
-          .eq("status", "PLAYING");
+          .in("status", ["PLAYING", "CONTRACT_ACTIVE"]); // Support both legacy and contract games
 
         if (gameUpdateError) {
           console.error("Failed to complete game:", gameUpdateError);

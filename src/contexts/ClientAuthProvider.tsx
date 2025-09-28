@@ -86,7 +86,8 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
             address = await signer.getAddress();
           }
         } catch (error) {
-          console.error("Could not get address from provider:", error);
+          // This is expected when provider is not available or not connected
+          console.debug("Could not get address from provider:", error);
         }
 
         // If no address from provider, try JWT token (for social logins)
@@ -119,7 +120,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
                 }
               }
             } catch (error) {
-              console.error("Failed to decode JWT token:", error);
+              console.warn("Failed to decode JWT token:", error);
             }
           }
         }
@@ -127,7 +128,10 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         setUserId(id);
         setWalletAddress(address);
       } else {
-        console.error("Not connected or no userInfo available");
+        // User is not connected - this is normal when not authenticated
+        if (isConnected) {
+          console.warn("Web3Auth connected but no userInfo available");
+        }
         setUserId(null);
         setWalletAddress(null);
       }

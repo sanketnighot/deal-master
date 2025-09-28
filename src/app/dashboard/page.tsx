@@ -1,13 +1,12 @@
 'use client'
 
 import { TopBar } from "@/components/layout/TopBar";
-import { PYUSDPaymentModal } from "@/components/payment/PYUSDPaymentModal";
+import { ContractPaymentModal } from "@/components/payment/ContractPaymentModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGameApi } from "@/lib/api";
-import { ENTRY_FEE_CENTS, MAX_PRIZE_CENTS } from "@/lib/config";
+import { BOX_VALUES_CENTS, ENTRY_FEE_CENTS } from "@/lib/config";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -35,7 +34,6 @@ interface Game {
 export default function Dashboard() {
   const { isAuthenticated, isLoading, walletAddress, authenticatedFetch } =
     useAuth();
-  const { createGame, getGames } = useGameApi();
   const router = useRouter();
   const { addToast } = useToast();
   const [games, setGames] = useState<Game[]>([]);
@@ -61,16 +59,19 @@ export default function Dashboard() {
   const loadGames = async (page: number = 1) => {
     try {
       setLoadingGames(true);
-      const response = await getGames(page, 10);
+      const response = await authenticatedFetch(
+        `/api/games?page=${page}&limit=10`
+      );
+      const result = await response.json();
 
-      if (response.success) {
-        setGames(response.games);
-        setPagination(response.pagination);
+      if (result.success) {
+        setGames(result.games);
+        setPagination(result.pagination);
       } else {
         addToast({
           type: "error",
           title: "Failed to Load Games",
-          message: response.error || "Please try again later",
+          message: result.error || "Please try again later",
         });
       }
     } catch (error) {
@@ -110,22 +111,30 @@ export default function Dashboard() {
       setCreatingGame(true);
       setShowPaymentModal(false);
 
-      const response = await createGame(ENTRY_FEE_CENTS, txHash, walletAddress);
+      const response = await authenticatedFetch("/api/game/create-contract", {
+        method: "POST",
+        body: JSON.stringify({
+          contractTxHash: txHash,
+          userAddress: walletAddress,
+        }),
+      });
 
-      if (response.success) {
+      const result = await response.json();
+
+      if (result.success) {
         addToast({
           type: "success",
           title: "Game Created!",
-          message: "Redirecting to your new game...",
+          message: "Redirecting to your new smart contract game...",
         });
         // Reload games to show the new one
         await loadGames(1);
-        router.push(`/game/${response.game.id}`);
+        router.push(`/game/${result.game.id}`);
       } else {
         addToast({
           type: "error",
           title: "Failed to Create Game",
-          message: response.error || "Please try again later",
+          message: result.error || "Please try again later",
         });
       }
     } catch (error) {
@@ -217,7 +226,7 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <h3
                     className="text-lg font-pixel mb-2"
-                    style={{ color: "rgb(255, 255, 0)" }}
+                    style={{ color: "rgb(255, 0, 255)" }}
                   >
                     🎮 START A NEW GAME
                   </h3>
@@ -225,7 +234,7 @@ export default function Dashboard() {
                     className="font-pixel text-sm mb-3"
                     style={{ color: "rgb(0, 255, 255)" }}
                   >
-                    Create a new Deal Master game with PYUSD payment
+                    Create a new Deal Master game on the blockchain
                   </p>
                   <div
                     className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs font-pixel"
@@ -238,23 +247,29 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <div className="flex items-center space-x-1">
+                      <span>📦 Boxes:</span>
+                      <span style={{ color: "rgb(255, 255, 255)" }}>
+                        8 Boxes
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
                       <span>🏆 Max Prize:</span>
                       <span style={{ color: "rgb(255, 255, 255)" }}>
-                        {formatCurrency(MAX_PRIZE_CENTS)} PYUSD
+                        {formatCurrency(Math.max(...BOX_VALUES_CENTS))} PYUSD
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex-shrink-0">
                   <Button
-                    variant="cyan"
+                    variant="magenta"
                     size="lg"
                     onClick={handleCreateGame}
                     loading={creatingGame}
                     className="flex items-center space-x-2 w-full md:w-auto"
                   >
                     <Plus className="h-5 w-5" />
-                    <span>NEW GAME</span>
+                    <span>CREATE GAME</span>
                   </Button>
                 </div>
               </div>
@@ -379,28 +394,40 @@ export default function Dashboard() {
                             className="px-2 py-1 text-xs font-pixel border-2 w-fit"
                             style={{
                               borderColor:
-                                game.status === "PLAYING"
+                                game.status === "PLAYING" ||
+                                game.status === "CONTRACT_ACTIVE"
                                   ? "rgb(255, 255, 0)"
-                                  : game.status === "FINISHED"
+                                  : game.status === "FINISHED" ||
+                                      game.status === "COMPLETED" ||
+                                      game.status === "CONTRACT_COMPLETED"
                                     ? "rgb(0, 255, 0)"
                                     : "rgb(128, 128, 128)",
                               color:
-                                game.status === "PLAYING"
+                                game.status === "PLAYING" ||
+                                game.status === "CONTRACT_ACTIVE"
                                   ? "rgb(255, 255, 0)"
-                                  : game.status === "FINISHED"
+                                  : game.status === "FINISHED" ||
+                                      game.status === "COMPLETED" ||
+                                      game.status === "CONTRACT_COMPLETED"
                                     ? "rgb(0, 255, 0)"
                                     : "rgb(128, 128, 128)",
                               backgroundColor:
-                                game.status === "PLAYING"
+                                game.status === "PLAYING" ||
+                                game.status === "CONTRACT_ACTIVE"
                                   ? "rgba(255, 255, 0, 0.1)"
-                                  : game.status === "FINISHED"
+                                  : game.status === "FINISHED" ||
+                                      game.status === "COMPLETED" ||
+                                      game.status === "CONTRACT_COMPLETED"
                                     ? "rgba(0, 255, 0, 0.1)"
                                     : "rgba(128, 128, 128, 0.1)",
                             }}
                           >
-                            {game.status === "PLAYING"
+                            {game.status === "PLAYING" ||
+                            game.status === "CONTRACT_ACTIVE"
                               ? "IN PROGRESS"
-                              : game.status === "FINISHED"
+                              : game.status === "FINISHED" ||
+                                  game.status === "COMPLETED" ||
+                                  game.status === "CONTRACT_COMPLETED"
                                 ? "COMPLETED"
                                 : game.status}
                           </span>
@@ -446,7 +473,8 @@ export default function Dashboard() {
                             </div>
                           )}
                           {game.banker_offer_cents &&
-                            game.status === "PLAYING" && (
+                            (game.status === "PLAYING" ||
+                              game.status === "CONTRACT_ACTIVE") && (
                               <div>
                                 <span style={{ color: "rgb(0, 255, 255)" }}>
                                   Current Offer:
@@ -468,7 +496,8 @@ export default function Dashboard() {
                         >
                           <Play className="h-4 w-4" />
                           <span>
-                            {game.status === "PLAYING"
+                            {game.status === "PLAYING" ||
+                            game.status === "CONTRACT_ACTIVE"
                               ? " CONTINUE"
                               : " VIEW GAME"}
                           </span>
@@ -565,7 +594,12 @@ export default function Dashboard() {
                 className="text-3xl font-pixel"
                 style={{ color: "rgb(0, 255, 255)" }}
               >
-                {games.filter((g) => g.status === "PLAYING").length}
+                {
+                  games.filter(
+                    (g) =>
+                      g.status === "PLAYING" || g.status === "CONTRACT_ACTIVE"
+                  ).length
+                }
               </div>
               <p
                 className="text-xs font-pixel mt-1"
@@ -623,12 +657,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* PYUSD Payment Modal */}
-      <PYUSDPaymentModal
+      {/* Contract Payment Modal */}
+      <ContractPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSuccess={handlePaymentSuccess}
-        entryFeeCents={ENTRY_FEE_CENTS}
       />
     </div>
   );

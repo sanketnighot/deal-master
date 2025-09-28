@@ -24,65 +24,110 @@ export function BankerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md mx-auto animate-fade-in">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            🏦 The Banker's Offer
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.8)" }}
+    >
+      <div className="crt-overlay" />
+      <Card
+        variant="pixel"
+        className="w-full max-w-lg mx-auto animate-text-flicker relative z-10"
+        style={{
+          backgroundColor: "rgba(28, 0, 51, 0.95)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <CardHeader
+          className="text-center border-b-4"
+          style={{ borderBottomColor: "rgb(0, 255, 255)" }}
+        >
+          <CardTitle
+            className="text-2xl font-pixel animate-text-flicker"
+            style={{ color: "rgb(0, 255, 255)" }}
+          >
+            🏦 THE BANKER'S OFFER
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="text-center space-y-6">
+        <CardContent className="text-center space-y-6 p-6">
           {lastBurnedCase && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="text-sm font-medium text-red-800 mb-1">
+            <div
+              className="border-4 p-4 animate-text-flicker"
+              style={{
+                borderColor: "rgb(255, 0, 0)",
+                backgroundColor: "rgba(255, 0, 0, 0.1)",
+              }}
+            >
+              <div
+                className="text-sm font-pixel mb-2"
+                style={{ color: "rgb(255, 0, 0)" }}
+              >
                 Last Case Opened
               </div>
-              <div className="text-lg font-bold text-red-900">
+              <div
+                className="text-lg font-pixel"
+                style={{ color: "rgb(255, 255, 255)" }}
+              >
                 Case {lastBurnedCase.idx + 1}:{" "}
                 {formatCurrency(lastBurnedCase.value_cents)}
               </div>
             </div>
           )}
 
-          <div className="space-y-2">
-            <p className="text-gray-600">
-              The banker has made you an offer for your case:
+          <div className="space-y-4">
+            <p
+              className="font-pixel text-sm"
+              style={{ color: "rgb(0, 255, 255)" }}
+            >
+              The banker has made you an offer for your case!
             </p>
-            <div className="text-4xl font-bold text-primary-600">
+            <div
+              className="text-4xl font-pixel animate-text-flicker border-4 py-4"
+              style={{
+                color: "rgb(255, 255, 0)",
+                borderColor: "rgb(255, 255, 0)",
+                backgroundColor: "rgba(255, 255, 0, 0.1)",
+              }}
+            >
               {formatCurrency(offer)}
             </div>
           </div>
 
-          <div className="space-y-3">
-            <p className="text-sm text-gray-500">
+          <div className="space-y-4">
+            <p
+              className="text-sm font-pixel"
+              style={{ color: "rgb(0, 255, 255)" }}
+            >
               Do you want to accept this offer, or continue playing?
             </p>
 
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <Button
-                variant="outline"
+                variant="cyan"
                 size="lg"
-                className="flex-1"
+                className="font-pixel"
                 onClick={onAccept}
                 loading={loading}
               >
-                Accept Deal
+                ACCEPT DEAL
               </Button>
 
               <Button
-                variant="outline"
+                variant="magenta"
                 size="lg"
-                className="flex-1"
+                className="font-pixel"
                 onClick={onReject}
                 disabled={loading}
               >
-                No Deal
+                NO DEAL
               </Button>
             </div>
           </div>
 
-          <div className="text-xs text-gray-400">
+          <div
+            className="text-xs font-pixel animate-text-flicker"
+            style={{ color: "rgba(0, 255, 255, 0.7)" }}
+          >
             Remember: You can only accept or reject once!
           </div>
         </CardContent>

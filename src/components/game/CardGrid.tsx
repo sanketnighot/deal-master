@@ -37,8 +37,14 @@ export function CardGrid({
             burned={card.burned}
             isPlayerCase={card.idx === playerCase}
             onClick={() => onCardClick?.(card.idx)}
-            disabled={gameStatus !== "PLAYING"}
-            gameFinished={gameStatus === "FINISHED"}
+            disabled={
+              gameStatus !== "PLAYING" && gameStatus !== "CONTRACT_ACTIVE"
+            }
+            gameFinished={
+              gameStatus === "FINISHED" ||
+              gameStatus === "COMPLETED" ||
+              gameStatus === "CONTRACT_COMPLETED"
+            }
           />
         ))}
       </div>

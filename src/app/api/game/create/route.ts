@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
     const normalizedUserAddress = userAddress.toLowerCase();
 
     // Verify PYUSD payment transaction
+    console.log(
+      `Creating game for user: ${normalizedUserAddress}, entry fee: ${entryFeeCents} cents, tx: ${paymentTxHash}`
+    );
+
     const isPaymentValid = await verifyPYUSDTransfer(
       paymentTxHash,
       normalizedUserAddress,
@@ -66,11 +70,17 @@ export async function POST(request: NextRequest) {
     );
 
     if (!isPaymentValid) {
+      console.error(`Payment verification failed for tx: ${paymentTxHash}`);
       return NextResponse.json(
-        { error: "Invalid or insufficient PYUSD payment" },
+        {
+          error:
+            "Invalid or insufficient PYUSD payment. Please ensure the transaction was successful and for the correct amount.",
+        },
         { status: 400 }
       );
     }
+
+    console.log(`Payment verification successful for tx: ${paymentTxHash}`);
 
     // Generate card values
     const cardValues = generateCardValues(entryFeeCents);

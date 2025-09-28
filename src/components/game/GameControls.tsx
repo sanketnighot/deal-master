@@ -27,7 +27,11 @@ export function GameControls({
   loading = false,
 }: GameControlsProps) {
   const getGamePhase = () => {
-    if (gameStatus !== "PLAYING") return "finished";
+    // Check if game is still active (playing states)
+    const isActive =
+      gameStatus === "PLAYING" || gameStatus === "CONTRACT_ACTIVE";
+    if (!isActive) return "finished";
+
     if (playerCase === null) return "pick";
     if (unrevealedCount === 2) return "final";
     return "burn";

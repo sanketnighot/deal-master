@@ -76,49 +76,54 @@ export function getRemainingValues(cards: Card[], playerCase: number | null): nu
  * Validate game state for various operations
  */
 export function validateGameState(game: any, operation: string): { valid: boolean; error?: string } {
+  // Helper function to check if game is in active/playing state
+  const isGameActive = (status: string) => {
+    return status === "PLAYING" || status === "CONTRACT_ACTIVE";
+  };
+
   switch (operation) {
-    case 'pick':
-      if (game.status !== 'PLAYING') {
-        return { valid: false, error: 'Game is not in playing state' }
+    case "pick":
+      if (!isGameActive(game.status)) {
+        return { valid: false, error: "Game is not in playing state" };
       }
       if (game.player_case !== null) {
-        return { valid: false, error: 'Player has already picked a case' }
+        return { valid: false, error: "Player has already picked a case" };
       }
-      break
+      break;
 
-    case 'burn':
-      if (game.status !== 'PLAYING') {
-        return { valid: false, error: 'Game is not in playing state' }
+    case "burn":
+      if (!isGameActive(game.status)) {
+        return { valid: false, error: "Game is not in playing state" };
       }
       if (game.player_case === null) {
-        return { valid: false, error: 'Player must pick a case first' }
+        return { valid: false, error: "Player must pick a case first" };
       }
-      break
+      break;
 
-    case 'acceptDeal':
-      if (game.status !== 'PLAYING') {
-        return { valid: false, error: 'Game is not in playing state' }
+    case "acceptDeal":
+      if (!isGameActive(game.status)) {
+        return { valid: false, error: "Game is not in playing state" };
       }
       if (game.banker_offer_cents === null) {
-        return { valid: false, error: 'No banker offer available' }
+        return { valid: false, error: "No banker offer available" };
       }
       if (game.accepted_deal) {
-        return { valid: false, error: 'Deal already accepted' }
+        return { valid: false, error: "Deal already accepted" };
       }
-      break
+      break;
 
-    case 'finalReveal':
-      if (game.status !== 'PLAYING') {
-        return { valid: false, error: 'Game is not in playing state' }
+    case "finalReveal":
+      if (!isGameActive(game.status)) {
+        return { valid: false, error: "Game is not in playing state" };
       }
       if (game.accepted_deal) {
-        return { valid: false, error: 'Cannot reveal after accepting deal' }
+        return { valid: false, error: "Cannot reveal after accepting deal" };
       }
       // Additional validation will be done in the route handler to check card count
-      break
+      break;
   }
 
-  return { valid: true }
+  return { valid: true };
 }
 
 /**
@@ -174,13 +179,16 @@ export function getPublicGameState(game: any, cards: Card[]): any {
     banker_offer_cents: game.banker_offer_cents,
     accepted_deal: game.accepted_deal,
     final_won_cents: game.final_won_cents,
-    revealed_cards: revealedCards.map(card => ({
+    game_mode: game.game_mode,
+    contract_game_id: game.contract_game_id,
+    contract_tx_hash: game.contract_tx_hash,
+    revealed_cards: revealedCards.map((card) => ({
       idx: card.idx,
       value_cents: card.value_cents,
-      burned: card.burned
+      burned: card.burned,
     })),
-    unrevealed_count: unrevealedCount
-  }
+    unrevealed_count: unrevealedCount,
+  };
 }
 
 /**

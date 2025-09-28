@@ -494,7 +494,9 @@ export default function GamePage() {
         </div>
 
         {/* Game Results Banner */}
-        {gameState.status === "FINISHED" && (
+        {(gameState.status === "FINISHED" ||
+          gameState.status === "COMPLETED" ||
+          gameState.status === "CONTRACT_COMPLETED") && (
           <div className="max-w-4xl mx-auto mb-8">
             <Card
               variant="pixel"

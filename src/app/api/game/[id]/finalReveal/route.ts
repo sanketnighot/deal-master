@@ -117,7 +117,7 @@ export async function POST(
         status: "FINISHED",
       })
       .eq("id", gameId)
-      .eq("status", "PLAYING");
+      .in("status", ["PLAYING", "CONTRACT_ACTIVE"]); // Support both legacy and contract games
 
     if (gameUpdateError) {
       console.error("Failed to update game:", gameUpdateError);
@@ -130,13 +130,20 @@ export async function POST(
     // Distribute prize if there's a winning amount
     let prizeDistributionResult = null;
     if (finalCard.value_cents > 0) {
+      console.log(
+        `🎮 Game ${gameId} completed with prize: ${finalCard.value_cents} cents for user ${gameData.user_id}`
+      );
       try {
+        console.log("🎁 Attempting automatic prize distribution...");
         prizeDistributionResult = await distributePrize(
           gameData.user_id, // user_id is the wallet address
           finalCard.value_cents
         );
 
         if (prizeDistributionResult.success) {
+          console.log(
+            `✅ Prize distribution successful! TX: ${prizeDistributionResult.txHash}`
+          );
           // Update game with prize distribution info
           await supabaseAdmin
             .from("games")
@@ -145,12 +152,39 @@ export async function POST(
               prize_tx_hash: prizeDistributionResult.txHash,
             })
             .eq("id", gameId);
+        } else {
+          console.error(
+            `❌ Prize distribution failed: ${prizeDistributionResult.error}`
+          );
+          // Mark the game as completed but note that prize distribution failed
+          await supabaseAdmin
+            .from("games")
+            .update({
+              prize_distributed: false,
+              prize_distribution_error: prizeDistributionResult.error,
+            })
+            .eq("id", gameId);
         }
       } catch (error) {
-        console.error("Failed to distribute prize:", error);
+        console.error("💥 Exception during prize distribution:", error);
+        // Mark the game as completed but note that prize distribution failed
+        await supabaseAdmin
+          .from("games")
+          .update({
+            prize_distributed: false,
+            prize_distribution_error:
+              error instanceof Error
+                ? error.message
+                : "Unknown error during prize distribution",
+          })
+          .eq("id", gameId);
         // Don't fail the game completion if prize distribution fails
         // The prize can be distributed manually later
       }
+    } else {
+      console.log(
+        `🎮 Game ${gameId} completed with no prize (${finalCard.value_cents} cents)`
+      );
     }
 
     // Create move record

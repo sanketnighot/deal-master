@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { ADMIN_ADDRESS, CHAIN_ID, USD_ADDRESS } from "@/lib/config";
+import { CHAIN_ID, CONTRACT_ENTRY_FEE_CENTS, DEAL_MASTER_ADDRESS, USD_ADDRESS } from "@/lib/config";
+import { dealMasterAbi } from "@/lib/deal_master_abi";
+import { checkPYUSDApproval, CONTRACT_CONSTANTS } from "@/lib/dealMasterContract";
 import { pyusd_abi } from "@/lib/pyusd_abi";
 import { formatCurrency } from "@/lib/utils";
 import { useWeb3Auth } from "@web3auth/modal/react";
@@ -13,16 +15,16 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
+  Info,
   Loader2,
   Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-interface PYUSDPaymentModalProps {
+interface ContractPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (txHash: string, walletAddress: string) => void;
-  entryFeeCents: number;
 }
 
 interface PaymentStep {
@@ -33,15 +35,15 @@ interface PaymentStep {
   error?: string;
 }
 
-export function PYUSDPaymentModal({
+export function ContractPaymentModal({
   isOpen,
   onClose,
   onSuccess,
-  entryFeeCents,
-}: PYUSDPaymentModalProps) {
+}: ContractPaymentModalProps) {
   const { walletAddress, authenticatedFetch } = useAuth();
   const { web3Auth } = useWeb3Auth();
   const { addToast } = useToast();
+
   const [steps, setSteps] = useState<PaymentStep[]>([
     {
       id: "check-balance",
@@ -50,23 +52,33 @@ export function PYUSDPaymentModal({
       status: "pending",
     },
     {
-      id: "transfer",
-      title: "Transfer Entry Fee",
-      description: "Send PYUSD payment to admin wallet",
+      id: "check-approval",
+      title: "Check PYUSD Approval",
+      description: "Checking if contract can spend your PYUSD",
+      status: "pending",
+    },
+    {
+      id: "approve-pyusd",
+      title: "Approve PYUSD Spending",
+      description: "Allow contract to spend PYUSD for game entry",
+      status: "pending",
+    },
+    {
+      id: "start-game",
+      title: "Start Game",
+      description: "Create new game on smart contract",
       status: "pending",
     },
   ]);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userBalance, setUserBalance] = useState<string>("0");
+  const [approvalNeeded, setApprovalNeeded] = useState(false);
   const [txHash, setTxHash] = useState<string>("");
-  const [walletType, setWalletType] = useState<
-    "embedded" | "external" | "unknown"
-  >("embedded");
   const [networkCorrect, setNetworkCorrect] = useState<boolean>(false);
 
-  // We'll get decimals dynamically from the contract
-  const entryFeeDisplay = formatCurrency(entryFeeCents);
+  const entryFeeDisplay = formatCurrency(CONTRACT_ENTRY_FEE_CENTS);
 
   const updateStepStatus = (
     stepId: string,
@@ -80,30 +92,12 @@ export function PYUSDPaymentModal({
     );
   };
 
-  // Check wallet type and network on modal open
+  // Check network on modal open
   useEffect(() => {
     if (isOpen && web3Auth) {
-      detectWalletType();
       checkNetwork();
     }
   }, [isOpen, web3Auth]);
-
-  const detectWalletType = async () => {
-    try {
-      if (!web3Auth?.provider) {
-        setWalletType("embedded");
-        return;
-      }
-
-      // Since we're using Web3Auth, we can assume it's an embedded wallet
-      // Web3Auth handles both social logins (embedded) and external wallet connections
-      // For this implementation, we'll treat all as embedded since Web3Auth manages the flow
-      setWalletType("embedded");
-    } catch (error) {
-      console.error("Error detecting wallet type:", error);
-      setWalletType("embedded");
-    }
-  };
 
   const checkNetwork = async () => {
     try {
@@ -114,8 +108,6 @@ export function PYUSDPaymentModal({
 
       const provider = new ethers.BrowserProvider(web3Auth.provider);
       const network = await provider.getNetwork();
-
-      // Check if we're on the correct network from config
       const isCorrectNetwork = network.chainId === BigInt(CHAIN_ID);
       setNetworkCorrect(isCorrectNetwork);
 
@@ -146,31 +138,22 @@ export function PYUSDPaymentModal({
       const provider = new ethers.BrowserProvider(web3Auth.provider);
       const chainIdHex = `0x${CHAIN_ID.toString(16)}`;
 
-      // Network configurations based on chain ID
       const getNetworkConfig = (chainId: number) => {
         switch (chainId) {
-          case 545: // Flow EVM Testnet
+          case 545:
             return {
               chainId: chainIdHex,
               chainName: "Flow EVM Testnet",
               rpcUrls: ["https://testnet.evm.nodes.onflow.org"],
-              nativeCurrency: {
-                name: "Flow",
-                symbol: "FLOW",
-                decimals: 18,
-              },
+              nativeCurrency: { name: "Flow", symbol: "FLOW", decimals: 18 },
               blockExplorerUrls: ["https://evm-testnet.flowscan.io/"],
             };
-          case 11155111: // Sepolia
+          case 11155111:
             return {
               chainId: chainIdHex,
               chainName: "Ethereum Sepolia",
               rpcUrls: ["https://sepolia.infura.io/v3/"],
-              nativeCurrency: {
-                name: "Ethereum",
-                symbol: "ETH",
-                decimals: 18,
-              },
+              nativeCurrency: { name: "Ethereum", symbol: "ETH", decimals: 18 },
               blockExplorerUrls: ["https://sepolia.etherscan.io/"],
             };
           default:
@@ -178,11 +161,7 @@ export function PYUSDPaymentModal({
               chainId: chainIdHex,
               chainName: `Network ${chainId}`,
               rpcUrls: [""],
-              nativeCurrency: {
-                name: "ETH",
-                symbol: "ETH",
-                decimals: 18,
-              },
+              nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
               blockExplorerUrls: [""],
             };
         }
@@ -190,11 +169,8 @@ export function PYUSDPaymentModal({
 
       const networkConfig = getNetworkConfig(CHAIN_ID);
 
-      // Try to switch network using the provider
       try {
-        await provider.send("wallet_switchEthereumChain", [
-          { chainId: chainIdHex },
-        ]);
+        await provider.send("wallet_switchEthereumChain", [{ chainId: chainIdHex }]);
         await checkNetwork();
         addToast({
           type: "success",
@@ -202,7 +178,6 @@ export function PYUSDPaymentModal({
           message: `Successfully switched to ${networkConfig.chainName}`,
         });
       } catch (switchError: any) {
-        // If switching fails, try adding the network
         if (switchError.code === 4902) {
           await provider.send("wallet_addEthereumChain", [networkConfig]);
           await checkNetwork();
@@ -215,7 +190,7 @@ export function PYUSDPaymentModal({
       addToast({
         type: "error",
         title: "Network Switch Failed",
-        message: `Please manually switch to the correct network (Chain ID: ${CHAIN_ID}) in your Web3Auth settings`,
+        message: `Please manually switch to the correct network (Chain ID: ${CHAIN_ID})`,
       });
     }
   };
@@ -248,72 +223,32 @@ export function PYUSDPaymentModal({
     );
 
     try {
-      // Get Web3Auth provider
-      if (!web3Auth) {
-        throw new Error("Web3Auth instance not available");
+      if (!web3Auth?.provider) {
+        throw new Error("Web3Auth provider not available");
       }
 
-      const web3authProvider = web3Auth.provider;
-      if (!web3authProvider) {
-        throw new Error(
-          "Web3Auth provider not available. Please ensure you are properly logged in."
-        );
-      }
-
-      // Create ethers provider and signer
-      const provider = new ethers.BrowserProvider(web3authProvider);
+      const provider = new ethers.BrowserProvider(web3Auth.provider);
       const signer = await provider.getSigner();
-
-      // Verify we can get the signer address
       const signerAddress = await signer.getAddress();
-
-      // Use signer address if walletAddress prop is not available
       const addressToUse = walletAddress || signerAddress;
 
-      // Create PYUSD contract instance
-      const pyusdContract = new ethers.Contract(USD_ADDRESS, pyusd_abi, signer);
-
-      // Step 1: Check balance
+      // Step 1: Check PYUSD balance
       updateStepStatus("check-balance", "loading");
+      setCurrentStep(0);
 
-      let decimals: number;
-      let entryFeeWei: bigint;
+      const pyusdContract = new ethers.Contract(USD_ADDRESS, pyusd_abi, signer);
+      const balance = await pyusdContract.balanceOf(addressToUse);
+      const decimals = await pyusdContract.decimals();
+      const formattedBalance = ethers.formatUnits(balance, decimals);
+      setUserBalance(formattedBalance);
 
-      try {
-        // Get decimals from the contract
-        decimals = await pyusdContract.decimals();
-
-        // Convert entry fee to the correct units
-        entryFeeWei = ethers.parseUnits(
-          (entryFeeCents / 100).toString(),
-          decimals
-        );
-
-        const balance = await pyusdContract.balanceOf(addressToUse);
-
-        const formattedBalance = ethers.formatUnits(balance, decimals);
-        setUserBalance(formattedBalance);
-
-        if (balance < entryFeeWei) {
-          updateStepStatus(
-            "check-balance",
-            "error",
-            "Insufficient PYUSD balance"
-          );
-          addToast({
-            type: "error",
-            title: "Insufficient Balance",
-            message: `You have ${formattedBalance} PYUSD, but need ${entryFeeDisplay} PYUSD to play`,
-          });
-          return;
-        }
-      } catch (error) {
-        console.error("Error checking PYUSD balance:", error);
-        updateStepStatus("check-balance", "error", "Failed to check balance");
+      const requiredAmount = BigInt(CONTRACT_CONSTANTS.ENTRY_FEE);
+      if (balance < requiredAmount) {
+        updateStepStatus("check-balance", "error", "Insufficient PYUSD balance");
         addToast({
           type: "error",
-          title: "Balance Check Failed",
-          message: `Unable to check PYUSD balance. Please ensure you're connected to the correct network (Chain ID: ${CHAIN_ID}) and the PYUSD contract is correct.`,
+          title: "Insufficient Balance",
+          message: `You have ${formattedBalance} PYUSD, but need ${entryFeeDisplay} PYUSD to play`,
         });
         return;
       }
@@ -321,55 +256,87 @@ export function PYUSDPaymentModal({
       updateStepStatus("check-balance", "success");
       setCurrentStep(1);
 
-      // Step 2: Transfer entry fee
-      updateStepStatus("transfer", "loading");
+      // Step 2: Check PYUSD approval
+      updateStepStatus("check-approval", "loading");
 
-      // Show different messages based on wallet type
-      if (walletType === "external") {
-        addToast({
-          type: "info",
-          title: "Confirm Transaction",
-          message: "Please confirm the transaction in your wallet",
-        });
+      const approvalStatus = await checkPYUSDApproval(addressToUse, web3Auth.provider);
+      setApprovalNeeded(!approvalStatus.approved);
+
+      if (approvalStatus.approved) {
+        updateStepStatus("check-approval", "success");
+        updateStepStatus("approve-pyusd", "success");
+        setCurrentStep(3);
       } else {
+        updateStepStatus("check-approval", "success");
+        setCurrentStep(2);
+
+        // Step 3: Approve PYUSD spending
+        updateStepStatus("approve-pyusd", "loading");
+
         addToast({
           type: "info",
-          title: "Processing Payment",
-          message: "Web3Auth will handle the transaction signing",
+          title: "Approval Required",
+          message: "Please approve PYUSD spending in your wallet",
         });
+
+        const approveTx = await pyusdContract.approve(
+          DEAL_MASTER_ADDRESS,
+          requiredAmount
+        );
+
+        addToast({
+          type: "info",
+          title: "Approval Submitted",
+          message: "Waiting for approval confirmation...",
+        });
+
+        await approveTx.wait();
+        updateStepStatus("approve-pyusd", "success");
+        setCurrentStep(3);
       }
 
-      const transferTx = await pyusdContract.transfer(
-        ADMIN_ADDRESS,
-        entryFeeWei
+      // Step 4: Start game on smart contract
+      updateStepStatus("start-game", "loading");
+
+      const dealMasterContract = new ethers.Contract(
+        DEAL_MASTER_ADDRESS,
+        dealMasterAbi,
+        signer
       );
 
       addToast({
         type: "info",
-        title: "Transaction Submitted",
-        message: "Waiting for confirmation on the blockchain...",
+        title: "Starting Game",
+        message: "Please confirm the game creation transaction",
       });
 
-      const receipt = await transferTx.wait();
+      const startGameTx = await dealMasterContract.startGame();
+
+      addToast({
+        type: "info",
+        title: "Transaction Submitted",
+        message: "Waiting for game creation confirmation...",
+      });
+
+      const receipt = await startGameTx.wait();
       setTxHash(receipt.hash);
 
-      updateStepStatus("transfer", "success");
+      updateStepStatus("start-game", "success");
 
       addToast({
         type: "success",
-        title: "Payment Successful!",
-        message: `Entry fee of ${entryFeeDisplay} PYUSD has been paid`,
+        title: "Game Created Successfully!",
+        message: `Your game has been created on the smart contract`,
       });
 
       // Call success callback with transaction hash
       onSuccess(receipt.hash, addressToUse);
     } catch (error: any) {
-      console.error("Payment error:", error);
+      console.error("Contract payment error:", error);
 
       let errorMessage = error.reason || error.message || "Payment failed";
       let errorTitle = "Payment Failed";
 
-      // Handle specific error types
       if (error.code === 4001 || error.message?.includes("User rejected")) {
         errorMessage = "Transaction was rejected by user";
         errorTitle = "Transaction Rejected";
@@ -379,10 +346,6 @@ export function PYUSDPaymentModal({
       } else if (error.message?.includes("insufficient funds")) {
         errorMessage = "Insufficient ETH for gas fees";
         errorTitle = "Insufficient Gas";
-      } else if (error.message?.includes("network")) {
-        errorMessage =
-          "Network error. Please check your connection and try again";
-        errorTitle = "Network Error";
       }
 
       updateStepStatus(steps[currentStep].id, "error", errorMessage);
@@ -406,9 +369,7 @@ export function PYUSDPaymentModal({
       case "error":
         return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
-        return (
-          <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
-        );
+        return <div className="h-4 w-4 rounded-full border-2 border-gray-300" />;
     }
   };
 
@@ -437,18 +398,18 @@ export function PYUSDPaymentModal({
             style={{ color: "rgb(0, 255, 255)" }}
           >
             <Wallet className="h-6 w-6" />
-            <span>💰 PAY WITH PYUSD</span>
+            <span>🎮 SMART CONTRACT GAME</span>
           </CardTitle>
         </CardHeader>
 
         <CardContent className="space-y-6 p-6">
-          {/* Network and Wallet Status */}
+          {/* Network Status */}
           <div className="space-y-4">
             <h3
               className="font-pixel text-sm mb-3"
               style={{ color: "rgb(255, 0, 255)" }}
             >
-              🌐 CONNECTION STATUS
+              🌐 NETWORK STATUS
             </h3>
 
             <div
@@ -507,86 +468,173 @@ export function PYUSDPaymentModal({
             </div>
           </div>
 
+          {/* Payment Summary */}
+          <div className="space-y-4">
+            <h3
+              className="font-pixel text-sm"
+              style={{ color: "rgb(255, 0, 255)" }}
+            >
+              💰 GAME DETAILS
+            </h3>
+
+            <div
+              className="border-4 p-5 animate-text-flicker"
+              style={{
+                backgroundColor: "rgba(255, 255, 0, 0.1)",
+                borderColor: "rgb(255, 255, 0)",
+              }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <span
+                  className="text-sm font-pixel"
+                  style={{ color: "rgb(255, 255, 0)" }}
+                >
+                  💵 Entry Fee:
+                </span>
+                <span
+                  className="font-pixel text-lg"
+                  style={{ color: "rgb(255, 255, 255)" }}
+                >
+                  {entryFeeDisplay} PYUSD
+                </span>
+              </div>
+              <div className="flex justify-between items-center mb-4">
+                <span
+                  className="text-sm font-pixel"
+                  style={{ color: "rgb(255, 255, 0)" }}
+                >
+                  📦 Boxes:
+                </span>
+                <span
+                  className="font-pixel text-lg"
+                  style={{ color: "rgb(255, 255, 255)" }}
+                >
+                  8 Boxes
+                </span>
+              </div>
+              {userBalance !== "0" && (
+                <div className="flex justify-between items-center mb-4">
+                  <span
+                    className="text-sm font-pixel"
+                    style={{ color: "rgb(255, 255, 0)" }}
+                  >
+                    💳 Your Balance:
+                  </span>
+                  <span
+                    className="text-sm font-pixel"
+                    style={{ color: "rgb(255, 255, 255)" }}
+                  >
+                    {parseFloat(userBalance).toFixed(2)} PYUSD
+                  </span>
+                </div>
+              )}
+              <div
+                className="mt-4 pt-3 border-t-4"
+                style={{ borderTopColor: "rgb(255, 255, 0)" }}
+              >
+                <div className="flex items-start space-x-3">
+                  <Info
+                    className="w-5 h-5 mt-0.5"
+                    style={{ color: "rgb(255, 255, 0)" }}
+                  />
+                  <span
+                    className="text-sm font-pixel leading-relaxed"
+                    style={{ color: "rgb(255, 255, 0)" }}
+                  >
+                    Game runs entirely on smart contract - fully decentralized!
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Payment Steps */}
           <div className="space-y-4">
             <h3
               className="font-pixel text-sm"
               style={{ color: "rgb(255, 0, 255)" }}
             >
-              ⚡ PAYMENT PROCESS
+              ⚡ SETUP PROCESS
             </h3>
             <div className="space-y-4">
-              {steps.map((step, index) => (
-                <div
-                  key={step.id}
-                  className={`flex items-start space-x-4 p-3 border-2 ${
-                    step.status === "loading" ? "animate-text-flicker" : ""
-                  }`}
-                  style={{
-                    backgroundColor:
-                      step.status === "success"
-                        ? "rgba(0, 255, 0, 0.1)"
-                        : step.status === "error"
-                          ? "rgba(255, 0, 0, 0.1)"
-                          : step.status === "loading"
-                            ? "rgba(0, 255, 255, 0.1)"
-                            : "rgba(255, 255, 255, 0.05)",
-                    borderColor:
-                      step.status === "success"
-                        ? "rgb(0, 255, 0)"
-                        : step.status === "error"
-                          ? "rgb(255, 0, 0)"
-                          : step.status === "loading"
-                            ? "rgb(0, 255, 255)"
-                            : "rgba(255, 255, 255, 0.3)",
-                  }}
-                >
-                  <div className="flex-shrink-0 mt-1">
-                    {getStepIcon(step.status)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
+              {steps.map((step, index) => {
+                // Skip approval step if not needed
+                if (step.id === "approve-pyusd" && !approvalNeeded && step.status === "pending") {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={step.id}
+                    className={`flex items-start space-x-4 p-3 border-2 ${
+                      step.status === "loading" ? "animate-text-flicker" : ""
+                    }`}
+                    style={{
+                      backgroundColor:
+                        step.status === "success"
+                          ? "rgba(0, 255, 0, 0.1)"
+                          : step.status === "error"
+                            ? "rgba(255, 0, 0, 0.1)"
+                            : step.status === "loading"
+                              ? "rgba(0, 255, 255, 0.1)"
+                              : "rgba(255, 255, 255, 0.05)",
+                      borderColor:
+                        step.status === "success"
+                          ? "rgb(0, 255, 0)"
+                          : step.status === "error"
+                            ? "rgb(255, 0, 0)"
+                            : step.status === "loading"
+                              ? "rgb(0, 255, 255)"
+                              : "rgba(255, 255, 255, 0.3)",
+                    }}
+                  >
+                    <div className="flex-shrink-0 mt-1">
+                      {getStepIcon(step.status)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p
+                          className="text-sm font-pixel"
+                          style={{
+                            color:
+                              step.status === "success"
+                                ? "rgb(0, 255, 0)"
+                                : step.status === "error"
+                                  ? "rgb(255, 0, 0)"
+                                  : "rgb(0, 255, 255)",
+                          }}
+                        >
+                          {step.title}
+                        </p>
+                        {index === currentStep && isProcessing && (
+                          <Loader2
+                            className="h-4 w-4 animate-spin"
+                            style={{ color: "rgb(0, 255, 255)" }}
+                          />
+                        )}
+                      </div>
                       <p
-                        className="text-sm font-pixel"
-                        style={{
-                          color:
-                            step.status === "success"
-                              ? "rgb(0, 255, 0)"
-                              : step.status === "error"
-                                ? "rgb(255, 0, 0)"
-                                : "rgb(0, 255, 255)",
-                        }}
+                        className="text-sm font-pixel leading-relaxed"
+                        style={{ color: "rgb(255, 255, 255)" }}
                       >
-                        {step.title}
+                        {step.description}
                       </p>
-                      {index === currentStep && isProcessing && (
-                        <Loader2
-                          className="h-4 w-4 animate-spin"
-                          style={{ color: "rgb(0, 255, 255)" }}
-                        />
+                      {step.error && (
+                        <p
+                          className="text-sm font-pixel mt-2 p-2 border-2 animate-text-flicker"
+                          style={{
+                            color: "rgb(255, 0, 0)",
+                            backgroundColor: "rgba(255, 0, 0, 0.1)",
+                            borderColor: "rgb(255, 0, 0)"
+                          }}
+                        >
+                          ❌ {step.error}
+                        </p>
                       )}
                     </div>
-                    <p
-                      className="text-sm font-pixel leading-relaxed"
-                      style={{ color: "rgb(255, 255, 255)" }}
-                    >
-                      {step.description}
-                    </p>
-                    {step.error && (
-                      <p
-                        className="text-sm font-pixel mt-2 p-2 border-2 animate-text-flicker"
-                        style={{
-                          color: "rgb(255, 0, 0)",
-                          backgroundColor: "rgba(255, 0, 0, 0.1)",
-                          borderColor: "rgb(255, 0, 0)",
-                        }}
-                      >
-                        ❌ {step.error}
-                      </p>
-                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -597,7 +645,7 @@ export function PYUSDPaymentModal({
                 className="font-pixel text-sm"
                 style={{ color: "rgb(255, 0, 255)" }}
               >
-                ✅ TRANSACTION SUCCESS
+                ✅ GAME CREATED
               </h3>
               <div
                 className="border-4 p-4 animate-text-flicker"
@@ -610,7 +658,7 @@ export function PYUSDPaymentModal({
                   className="text-sm font-pixel mb-3"
                   style={{ color: "rgb(0, 255, 0)" }}
                 >
-                  🎉 Payment Completed Successfully!
+                  🎉 Smart Contract Game Created Successfully!
                 </p>
                 <p
                   className="text-xs font-pixel break-all p-2 border-2"
@@ -647,11 +695,11 @@ export function PYUSDPaymentModal({
                 ? "PROCESSING..."
                 : !networkCorrect
                   ? "SWITCH NETWORK FIRST"
-                  : "PAY & START GAME"}
+                  : "CREATE SMART CONTRACT GAME"}
             </Button>
           </div>
 
-          {/* Network Info */}
+          {/* Contract Info */}
           <div
             className="space-y-3 pt-4 border-t-2"
             style={{ borderTopColor: "rgba(0, 255, 255, 0.3)" }}
@@ -674,60 +722,22 @@ export function PYUSDPaymentModal({
                   className="text-sm font-pixel"
                   style={{ color: "rgba(0, 255, 255, 0.8)" }}
                 >
-                  👤 Admin Wallet:
+                  🎮 Game Contract:
                 </span>
                 <div className="flex items-center space-x-2">
                   <span
                     className="font-pixel text-sm"
                     style={{ color: "rgb(255, 255, 255)" }}
                   >
-                    {ADMIN_ADDRESS.slice(0, 6)}...{ADMIN_ADDRESS.slice(-4)}
+                    {DEAL_MASTER_ADDRESS.slice(0, 6)}...{DEAL_MASTER_ADDRESS.slice(-4)}
                   </span>
                   <button
                     onClick={() => {
                       const explorerUrl =
                         CHAIN_ID === 545
-                          ? `https://evm-testnet.flowscan.io/address/${ADMIN_ADDRESS}`
+                          ? `https://evm-testnet.flowscan.io/address/${DEAL_MASTER_ADDRESS}`
                           : CHAIN_ID === 11155111
-                            ? `https://sepolia.etherscan.io/address/${ADMIN_ADDRESS}`
-                            : `#`;
-                      window.open(explorerUrl, "_blank");
-                    }}
-                    className="hover:opacity-80 transition-opacity"
-                    style={{ color: "rgb(0, 255, 255)" }}
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div
-                className="flex items-center justify-between p-3 border-2"
-                style={{
-                  backgroundColor: "rgba(0, 255, 255, 0.05)",
-                  borderColor: "rgba(0, 255, 255, 0.3)",
-                }}
-              >
-                <span
-                  className="text-sm font-pixel"
-                  style={{ color: "rgba(0, 255, 255, 0.8)" }}
-                >
-                  💰 PYUSD Contract:
-                </span>
-                <div className="flex items-center space-x-2">
-                  <span
-                    className="font-pixel text-sm"
-                    style={{ color: "rgb(255, 255, 255)" }}
-                  >
-                    {USD_ADDRESS.slice(0, 6)}...{USD_ADDRESS.slice(-4)}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const explorerUrl =
-                        CHAIN_ID === 545
-                          ? `https://evm-testnet.flowscan.io/address/${USD_ADDRESS}`
-                          : CHAIN_ID === 11155111
-                            ? `https://sepolia.etherscan.io/address/${USD_ADDRESS}`
+                            ? `https://sepolia.etherscan.io/address/${DEAL_MASTER_ADDRESS}`
                             : `#`;
                       window.open(explorerUrl, "_blank");
                     }}

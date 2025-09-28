@@ -1,7 +1,11 @@
-import { validateGameState } from '@/lib/server'
-import { createMove, getGameWithDetails, supabaseAdmin } from '@/lib/supabaseAdminClient'
-import { verifyAuthHeader } from '@/lib/web3authServer'
-import { NextRequest, NextResponse } from 'next/server'
+import { validateGameState } from "@/lib/server";
+import {
+  createMove,
+  getGameWithDetails,
+  supabaseAdmin,
+} from "@/lib/supabaseAdminClient";
+import { verifyAuthHeader } from "@/lib/web3authServer";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   request: NextRequest,
@@ -32,10 +36,10 @@ export async function POST(
     const body = await request.json();
     const { idx } = body;
 
-    // Validate case index
-    if (typeof idx !== "number" || idx < 0 || idx > 4) {
+    // Validate case index (now supports 8 boxes: 0-7)
+    if (typeof idx !== "number" || idx < 0 || idx > 7) {
       return NextResponse.json(
-        { error: "Invalid case index. Must be between 0 and 4." },
+        { error: "Invalid case index. Must be between 0 and 7." },
         { status: 400 }
       );
     }
@@ -75,7 +79,7 @@ export async function POST(
       .from("games")
       .update({ player_case: idx })
       .eq("id", gameId)
-      .eq("status", "PLAYING")
+      .in("status", ["PLAYING", "CONTRACT_ACTIVE"]) // Support both legacy and contract games
       .is("player_case", null); // Ensure no double-pick
 
     if (updateError) {
