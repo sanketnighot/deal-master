@@ -21,54 +21,98 @@ interface BankerChatProps {
   loading?: boolean;
 }
 
-// Banker responses based on negotiation attempts
-const BANKER_RESPONSES = [
-  {
-    trigger: 'higher',
-    responses: [
-      "I'm afraid that's my best offer. Take it or leave it!",
-      "You're pushing your luck. This is a fair deal.",
-      "I can't go higher. The risk is too great for me.",
-      "My offer stands. What will it be?",
-    ]
-  },
-  {
-    trigger: 'lower',
-    responses: [
-      "Ha! You think I'm giving away money? Not a chance!",
-      "My offer is already generous. Take it or continue playing!",
-      "I'm not a charity! This is my final offer.",
-      "You're testing my patience. Accept or walk away!",
-    ]
-  },
-  {
-    trigger: 'negotiate',
-    responses: [
-      "I appreciate your business, but this is my final offer.",
-      "I've calculated the risk carefully. This is fair.",
-      "You're a tough negotiator, but I can't budge.",
-      "Time is money. Accept my offer or continue the game!",
-    ]
-  },
-  {
-    trigger: 'insult',
-    responses: [
-      "That's no way to negotiate! My offer stands.",
-      "Insults won't change my mind. Take it or leave it!",
-      "I've been in this business for years. I know what's fair.",
-      "Your attitude won't get you a better deal!",
-    ]
-  },
-  {
-    trigger: 'default',
-    responses: [
-      "I've analyzed the remaining cases. This is my offer.",
-      "Based on the risk, I believe this is fair.",
-      "I'm confident in my assessment. What do you say?",
-      "This offer reflects the current situation perfectly.",
+// Enhanced banker personality with more human-like responses
+const BANKER_PERSONALITY = {
+  name: "Mr. Goldsworth",
+  mood: "professional", // professional, frustrated, encouraging, defensive
+  patience: 5, // decreases with each negotiation
+  maxNegotiations: 8,
+  
+  responses: {
+    initial: [
+      "Hello! I'm Mr. Goldsworth, your banker for today. I've analyzed your case and the remaining boxes very carefully.",
+      "Good day! I've been in this business for over 20 years, and I believe I've made you a very fair offer.",
+      "Welcome! I've calculated the statistical probability of your case value, and I'm prepared to make you an offer."
+    ],
+    
+    higher: [
+      "I understand your position, but I've already factored in the risk. My offer is based on solid mathematics.",
+      "You're a shrewd negotiator, but I can't ignore the numbers. This offer reflects the true value.",
+      "I appreciate your persistence, but I've been doing this long enough to know when to draw the line.",
+      "Look, I've got shareholders to answer to. I can't just throw money around based on emotions.",
+      "I respect your confidence, but I've calculated this down to the penny. My offer is final."
+    ],
+    
+    lower: [
+      "Ha! You're testing my patience now. I'm not running a charity here!",
+      "That's not how negotiations work, my friend. I'm already taking a risk with this offer.",
+      "You're asking me to give away money? I've got a reputation to maintain!",
+      "I'm a businessman, not a philanthropist. This offer is already generous given the circumstances.",
+      "Come on now, be reasonable. I'm not going to lose money just to make you happy."
+    ],
+    
+    negotiate: [
+      "I like your style, but I've been doing this for decades. I know what's fair.",
+      "You remind me of myself when I was starting out. Persistent, but I can't budge on this.",
+      "I appreciate good negotiation skills, but my offer is based on cold, hard facts.",
+      "You're making this interesting, but I've got a board meeting tomorrow. My offer stands.",
+      "I admire your determination, but I've already factored in every possible scenario."
+    ],
+    
+    compliment: [
+      "Well, thank you for that. I do try to be fair in all my dealings.",
+      "That's very kind of you to say. Experience has taught me the value of honesty.",
+      "I appreciate that. I've built my reputation on being straightforward with people.",
+      "You're too kind. I just believe in giving people what they deserve.",
+      "Thank you. I've learned that fairness is the foundation of good business."
+    ],
+    
+    pressure: [
+      "Look, I've got other games to manage today. Time is money, you know?",
+      "I'm a busy man with other clients waiting. What's it going to be?",
+      "I've given you my best offer. Don't make me regret being generous.",
+      "I don't have all day for this back and forth. Make your decision.",
+      "I'm starting to think you're wasting my time. This is my final offer."
+    ],
+    
+    frustrated: [
+      "This is getting ridiculous! I've made my position clear multiple times.",
+      "I'm beginning to question your business sense. My offer is more than fair.",
+      "You're testing my patience, and I don't like it. Take it or leave it!",
+      "I've been patient, but this is going nowhere. My offer stands, period.",
+      "I'm done with this charade. Accept my offer or continue playing the game."
+    ],
+    
+    final: [
+      "I've reached my limit with this negotiation. This is absolutely my final offer.",
+      "I'm a patient man, but even I have my limits. Take it or leave it.",
+      "I've given you every opportunity to accept a fair deal. This is it.",
+      "I'm calling an end to this negotiation. My offer is final.",
+      "I've been more than fair. This conversation is over unless you accept."
     ]
   }
-];
+};
+
+// Dynamic offer adjustment based on negotiation tactics
+const calculateOfferAdjustment = (originalOffer: number, negotiationCount: number, playerTactics: string[]): number => {
+  let adjustment = 0;
+  const baseAdjustment = originalOffer * 0.02; // 2% base adjustment
+  
+  // Positive adjustments for good tactics
+  if (playerTactics.includes('compliment')) adjustment += baseAdjustment * 0.5;
+  if (playerTactics.includes('reasonable')) adjustment += baseAdjustment * 0.3;
+  if (playerTactics.includes('business_sense')) adjustment += baseAdjustment * 0.4;
+  
+  // Negative adjustments for poor tactics
+  if (playerTactics.includes('insult')) adjustment -= baseAdjustment * 1.5;
+  if (playerTactics.includes('unreasonable')) adjustment -= baseAdjustment * 0.8;
+  if (playerTactics.includes('pressure')) adjustment -= baseAdjustment * 0.6;
+  
+  // Diminishing returns with more negotiations
+  const diminishingFactor = Math.max(0.1, 1 - (negotiationCount * 0.15));
+  
+  return Math.round(originalOffer + (adjustment * diminishingFactor));
+};
 
 export function BankerChat({
   initialOffer,
@@ -77,18 +121,25 @@ export function BankerChat({
   onReject,
   loading = false
 }: BankerChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      sender: 'banker',
-      message: `Hello! I've analyzed your case and the remaining boxes. I'm prepared to offer you ${formatCurrency(initialOffer)} to walk away right now. What do you think?`,
-      timestamp: new Date(),
-      offer: initialOffer
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const initialMessage = BANKER_PERSONALITY.responses.initial[
+      Math.floor(Math.random() * BANKER_PERSONALITY.responses.initial.length)
+    ];
+    return [
+      {
+        id: '1',
+        sender: 'banker',
+        message: `${initialMessage} I'm prepared to offer you ${formatCurrency(initialOffer)} to walk away right now. What do you think?`,
+        timestamp: new Date(),
+        offer: initialOffer
+      }
+    ];
+  });
   const [inputMessage, setInputMessage] = useState('');
   const [currentOffer, setCurrentOffer] = useState(initialOffer);
   const [negotiationCount, setNegotiationCount] = useState(0);
+  const [playerTactics, setPlayerTactics] = useState<string[]>([]);
+  const [bankerMood, setBankerMood] = useState('professional');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -99,49 +150,124 @@ export function BankerChat({
     scrollToBottom();
   }, [messages]);
 
-  const getBankerResponse = (playerMessage: string): string => {
-    const lowerMessage = playerMessage.toLowerCase();
-    let responseType = 'default';
-    
-    // Determine response type based on player message
+  const analyzePlayerMessage = (message: string): { responseType: string; tactics: string[] } => {
+    const lowerMessage = message.toLowerCase();
+    const tactics: string[] = [];
+    let responseType = 'negotiate';
+
+    // Analyze message content for tactics
     if (lowerMessage.includes('higher') || lowerMessage.includes('more') || lowerMessage.includes('increase')) {
       responseType = 'higher';
     } else if (lowerMessage.includes('lower') || lowerMessage.includes('less') || lowerMessage.includes('decrease')) {
       responseType = 'lower';
-    } else if (lowerMessage.includes('negotiate') || lowerMessage.includes('deal') || lowerMessage.includes('compromise')) {
-      responseType = 'negotiate';
-    } else if (lowerMessage.includes('stupid') || lowerMessage.includes('idiot') || lowerMessage.includes('bad')) {
-      responseType = 'insult';
+    } else if (lowerMessage.includes('stupid') || lowerMessage.includes('idiot') || lowerMessage.includes('bad') || lowerMessage.includes('terrible')) {
+      responseType = 'frustrated';
+      tactics.push('insult');
+    } else if (lowerMessage.includes('good') || lowerMessage.includes('fair') || lowerMessage.includes('reasonable') || lowerMessage.includes('thank')) {
+      responseType = 'compliment';
+      tactics.push('compliment');
+    } else if (lowerMessage.includes('hurry') || lowerMessage.includes('quick') || lowerMessage.includes('fast')) {
+      responseType = 'pressure';
+      tactics.push('pressure');
+    } else if (lowerMessage.includes('business') || lowerMessage.includes('professional') || lowerMessage.includes('respect')) {
+      tactics.push('business_sense');
+    } else if (lowerMessage.includes('please') || lowerMessage.includes('understand') || lowerMessage.includes('consider')) {
+      tactics.push('reasonable');
     }
 
-    const responseGroup = BANKER_RESPONSES.find(r => r.trigger === responseType) || BANKER_RESPONSES.find(r => r.trigger === 'default');
-    const responses = responseGroup?.responses || BANKER_RESPONSES[0].responses;
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+    // Check for unreasonable demands
+    if (lowerMessage.includes('double') || lowerMessage.includes('triple') || lowerMessage.includes('10x')) {
+      tactics.push('unreasonable');
+    }
+
+    return { responseType, tactics };
+  };
+
+  const getBankerResponse = (playerMessage: string, newTactics: string[]): { message: string; newOffer?: number; moodChange?: string } => {
+    const { responseType } = analyzePlayerMessage(playerMessage);
+    const updatedTactics = [...playerTactics, ...newTactics];
+    let currentMood = bankerMood;
+
+    // Determine mood based on negotiation count and tactics
+    if (negotiationCount >= 6) {
+      currentMood = 'frustrated';
+    } else if (negotiationCount >= 4) {
+      currentMood = 'pressure';
+    } else if (updatedTactics.includes('insult')) {
+      currentMood = 'frustrated';
+    } else if (updatedTactics.includes('compliment')) {
+      currentMood = 'professional';
+    }
+
+    // Get appropriate responses based on mood and negotiation count
+    let responseCategory = responseType;
+    if (negotiationCount >= BANKER_PERSONALITY.maxNegotiations - 2) {
+      responseCategory = 'final';
+    } else if (currentMood === 'frustrated') {
+      responseCategory = 'frustrated';
+    } else if (negotiationCount >= 4 && currentMood !== 'professional') {
+      responseCategory = 'pressure';
+    }
+
+    const responses = BANKER_PERSONALITY.responses[responseCategory as keyof typeof BANKER_PERSONALITY.responses] || BANKER_PERSONALITY.responses.negotiate;
+    const message = responses[Math.floor(Math.random() * responses.length)];
+
+    // Calculate potential offer adjustment
+    let newOffer = currentOffer;
+    if (negotiationCount < BANKER_PERSONALITY.maxNegotiations && responseCategory !== 'final' && responseCategory !== 'frustrated') {
+      newOffer = calculateOfferAdjustment(initialOffer, negotiationCount, updatedTactics);
+      // Ensure offer doesn't go below 80% of original or above 120%
+      newOffer = Math.max(
+        Math.min(newOffer, Math.round(initialOffer * 1.2)),
+        Math.round(initialOffer * 0.8)
+      );
+    }
+
+    return {
+      message,
+      newOffer: newOffer !== currentOffer ? newOffer : undefined,
+      moodChange: currentMood !== bankerMood ? currentMood : undefined
+    };
   };
 
   const handleSendMessage = () => {
     if (!inputMessage.trim() || loading) return;
 
+    const messageText = inputMessage.trim();
+    const { tactics } = analyzePlayerMessage(messageText);
+
     const playerMessage: ChatMessage = {
       id: Date.now().toString(),
       sender: 'player',
-      message: inputMessage.trim(),
+      message: messageText,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, playerMessage]);
     setInputMessage('');
     setNegotiationCount(prev => prev + 1);
+    setPlayerTactics(prev => [...prev, ...tactics]);
 
-    // Banker responds after a short delay
+    // Banker responds after a short delay with typing indicator
     setTimeout(() => {
-      const bankerResponse = getBankerResponse(playerMessage.message);
+      const response = getBankerResponse(messageText, tactics);
+      
+      // Update mood if changed
+      if (response.moodChange) {
+        setBankerMood(response.moodChange);
+      }
+
+      // Update offer if changed
+      if (response.newOffer) {
+        setCurrentOffer(response.newOffer);
+      }
+
       const bankerMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'banker',
-        message: bankerResponse,
-        timestamp: new Date()
+        message: response.message,
+        timestamp: new Date(),
+        offer: response.newOffer || currentOffer
       };
 
       setMessages(prev => [...prev, bankerMessage]);
@@ -157,11 +283,31 @@ export function BankerChat({
 
   const quickMessages = [
     "That's too low!",
-    "Can you go higher?",
-    "I want to negotiate",
-    "What's your final offer?",
-    "I need more time"
+    "Can you go higher?", 
+    "I appreciate your professionalism",
+    "Please reconsider",
+    "I understand your position",
+    "This seems reasonable",
+    "I need to think about this"
   ];
+
+  const getMoodEmoji = (mood: string) => {
+    switch (mood) {
+      case 'professional': return '😊';
+      case 'frustrated': return '😠';
+      case 'pressure': return '⏰';
+      default: return '😊';
+    }
+  };
+
+  const getMoodColor = (mood: string) => {
+    switch (mood) {
+      case 'professional': return 'rgb(0, 255, 255)';
+      case 'frustrated': return 'rgb(255, 0, 0)';
+      case 'pressure': return 'rgb(255, 255, 0)';
+      default: return 'rgb(0, 255, 255)';
+    }
+  };
 
   return (
     <Card
@@ -174,13 +320,13 @@ export function BankerChat({
     >
       <CardHeader
         className="text-center border-b-4"
-        style={{ borderBottomColor: "rgb(0, 255, 255)" }}
+        style={{ borderBottomColor: getMoodColor(bankerMood) }}
       >
         <CardTitle
           className="text-2xl font-pixel animate-text-flicker"
-          style={{ color: "rgb(0, 255, 255)" }}
+          style={{ color: getMoodColor(bankerMood) }}
         >
-          🏦 NEGOTIATE WITH THE BANKER
+          🏦 NEGOTIATE WITH {BANKER_PERSONALITY.name} {getMoodEmoji(bankerMood)}
         </CardTitle>
         {lastBurnedCase && (
           <div
@@ -190,6 +336,12 @@ export function BankerChat({
             Last opened: Case {lastBurnedCase.idx + 1} - {formatCurrency(lastBurnedCase.value_cents)}
           </div>
         )}
+        <div
+          className="text-xs font-pixel mt-1"
+          style={{ color: "rgba(255, 255, 255, 0.7)" }}
+        >
+          Mood: {bankerMood.toUpperCase()} | Negotiations: {negotiationCount}/{BANKER_PERSONALITY.maxNegotiations}
+        </div>
       </CardHeader>
 
       <CardContent className="p-4">
@@ -339,10 +491,23 @@ export function BankerChat({
         </div>
 
         <div
-          className="text-xs font-pixel mt-4 text-center"
-          style={{ color: "rgba(0, 255, 255, 0.7)" }}
+          className="text-xs font-pixel mt-4 text-center space-y-1"
+          style={{ color: "rgba(255, 255, 255, 0.7)" }}
         >
-          Negotiations: {negotiationCount} | Remember: You can only accept or reject once!
+          <div>
+            Negotiations: {negotiationCount}/{BANKER_PERSONALITY.maxNegotiations} | 
+            {negotiationCount >= BANKER_PERSONALITY.maxNegotiations - 2 && (
+              <span style={{ color: "rgb(255, 0, 0)" }}> BANKER IS GETTING IMPATIENT!</span>
+            )}
+          </div>
+          <div>
+            Original Offer: {formatCurrency(initialOffer)} | 
+            Current: {formatCurrency(currentOffer)} | 
+            Change: {currentOffer >= initialOffer ? '+' : ''}{Math.round(((currentOffer - initialOffer) / initialOffer) * 100)}%
+          </div>
+          <div style={{ color: "rgb(255, 255, 0)" }}>
+            Remember: You can only accept or reject once!
+          </div>
         </div>
       </CardContent>
     </Card>
