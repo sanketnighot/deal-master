@@ -299,10 +299,41 @@ export function useGameApi() {
     if (!isAuthenticated) {
       throw new Error("Not authenticated");
     }
-    return authenticatedFetch(`/api/game/${gameId}/select-initial-box`, {
-      method: "POST",
-      body: JSON.stringify({ idx, web3AuthProvider }),
-    }).then((res) => res.json());
+
+    try {
+      // First, call the contract directly
+      const { selectInitialBox: selectInitialBoxContract } = await import(
+        "@/lib/dealMasterContract"
+      );
+      const contractResult = await selectInitialBoxContract(
+        parseInt(gameId),
+        idx,
+        web3AuthProvider
+      );
+
+      if (!contractResult.success) {
+        throw new Error(
+          contractResult.error || "Failed to select initial box on contract"
+        );
+      }
+
+      // Then update the database with the transaction hash
+      const response = await authenticatedFetch(
+        `/api/game/${gameId}/select-initial-box`,
+        {
+          method: "POST",
+          body: JSON.stringify({ idx, txHash: contractResult.txHash }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "Failed to update database");
+
+      return { ...data, txHash: contractResult.txHash };
+    } catch (error) {
+      console.error("Error selecting initial box:", error);
+      throw error;
+    }
   };
 
   const burnBoxContract = async (
@@ -313,10 +344,39 @@ export function useGameApi() {
     if (!isAuthenticated) {
       throw new Error("Not authenticated");
     }
-    return authenticatedFetch(`/api/game/${gameId}/burn-contract`, {
-      method: "POST",
-      body: JSON.stringify({ idx, web3AuthProvider }),
-    }).then((res) => res.json());
+
+    try {
+      // First, call the contract directly
+      const { burnBoxOnContract } = await import("@/lib/dealMasterContract");
+      const contractResult = await burnBoxOnContract(
+        parseInt(gameId),
+        idx,
+        web3AuthProvider
+      );
+
+      if (!contractResult.success) {
+        throw new Error(
+          contractResult.error || "Failed to burn box on contract"
+        );
+      }
+
+      // Then update the database with the transaction hash
+      const response = await authenticatedFetch(
+        `/api/game/${gameId}/burn-contract`,
+        {
+          method: "POST",
+          body: JSON.stringify({ idx, txHash: contractResult.txHash }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "Failed to update database");
+
+      return { ...data, txHash: contractResult.txHash };
+    } catch (error) {
+      console.error("Error burning box:", error);
+      throw error;
+    }
   };
 
   const acceptDealContract = async (
@@ -327,10 +387,39 @@ export function useGameApi() {
     if (!isAuthenticated) {
       throw new Error("Not authenticated");
     }
-    return authenticatedFetch(`/api/game/${gameId}/accept-deal-contract`, {
-      method: "POST",
-      body: JSON.stringify({ offerAmount, web3AuthProvider }),
-    }).then((res) => res.json());
+
+    try {
+      // First, call the contract directly
+      const { acceptDealOnContract } = await import("@/lib/dealMasterContract");
+      const contractResult = await acceptDealOnContract(
+        parseInt(gameId),
+        offerAmount,
+        web3AuthProvider
+      );
+
+      if (!contractResult.success) {
+        throw new Error(
+          contractResult.error || "Failed to accept deal on contract"
+        );
+      }
+
+      // Then update the database with the transaction hash
+      const response = await authenticatedFetch(
+        `/api/game/${gameId}/accept-deal-contract`,
+        {
+          method: "POST",
+          body: JSON.stringify({ offerAmount, txHash: contractResult.txHash }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "Failed to update database");
+
+      return { ...data, txHash: contractResult.txHash };
+    } catch (error) {
+      console.error("Error accepting deal:", error);
+      throw error;
+    }
   };
 
   const finalSelectionContract = async (
@@ -341,10 +430,44 @@ export function useGameApi() {
     if (!isAuthenticated) {
       throw new Error("Not authenticated");
     }
-    return authenticatedFetch(`/api/game/${gameId}/final-selection-contract`, {
-      method: "POST",
-      body: JSON.stringify({ keepOriginalBox, web3AuthProvider }),
-    }).then((res) => res.json());
+
+    try {
+      // First, call the contract directly
+      const { finalSelectionOnContract } = await import(
+        "@/lib/dealMasterContract"
+      );
+      const contractResult = await finalSelectionOnContract(
+        parseInt(gameId),
+        keepOriginalBox,
+        web3AuthProvider
+      );
+
+      if (!contractResult.success) {
+        throw new Error(
+          contractResult.error || "Failed to make final selection on contract"
+        );
+      }
+
+      // Then update the database with the transaction hash
+      const response = await authenticatedFetch(
+        `/api/game/${gameId}/final-selection-contract`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            keepOriginalBox,
+            txHash: contractResult.txHash,
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error || "Failed to update database");
+
+      return { ...data, txHash: contractResult.txHash };
+    } catch (error) {
+      console.error("Error making final selection:", error);
+      throw error;
+    }
   };
 
   return {

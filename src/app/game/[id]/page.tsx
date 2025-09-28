@@ -300,16 +300,15 @@ export default function GamePage() {
     }
   };
 
-  const handleAcceptDeal = async () => {
+  const handleAcceptDeal = async (negotiatedOffer?: number) => {
     try {
       setActionLoading(true);
       const isContractGame = gameState?.game_mode === "contract";
 
       if (isContractGame) {
-        // For contract games, we need to pass the banker offer amount
-        const bankerOfferWei = gameState?.banker_offer_cents
-          ? (gameState.banker_offer_cents * 10000).toString()
-          : "0"; // Convert cents to wei
+        // For contract games, use the negotiated offer or the current banker offer
+        const offerAmount = negotiatedOffer || gameState?.banker_offer_cents || 0;
+        const bankerOfferWei = (offerAmount * 10000).toString(); // Convert cents to wei
 
         const response = await acceptDealContract(
           gameId,
@@ -322,7 +321,7 @@ export default function GamePage() {
           addToast({
             type: "success",
             title: "Deal Accepted!",
-            message: `You won ${formatCurrency(response.finalAmount || 0)}!`,
+            message: `You won ${formatCurrency(response.finalAmount || offerAmount)}!`,
           });
         } else {
           addToast({

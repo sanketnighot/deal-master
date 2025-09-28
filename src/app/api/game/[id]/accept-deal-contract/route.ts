@@ -1,5 +1,8 @@
-import { acceptDealOnContract } from "@/lib/dealMasterContract";
-import { createMove, getGameWithDetails, supabaseAdmin } from "@/lib/supabaseAdminClient";
+import {
+  createMove,
+  getGameWithDetails,
+  supabaseAdmin,
+} from "@/lib/supabaseAdminClient";
 import { verifyAuthHeader } from "@/lib/web3authServer";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -30,7 +33,7 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { offerAmount, web3AuthProvider } = body;
+    const { offerAmount, txHash } = body;
 
     if (!offerAmount) {
       return NextResponse.json(
@@ -39,9 +42,9 @@ export async function POST(
       );
     }
 
-    if (!web3AuthProvider) {
+    if (!txHash) {
       return NextResponse.json(
-        { error: "Web3Auth provider is required" },
+        { error: "Transaction hash is required" },
         { status: 400 }
       );
     }
@@ -84,19 +87,8 @@ export async function POST(
       );
     }
 
-    // Call smart contract function
-    const contractResult = await acceptDealOnContract(
-      gameData.contract_game_id!,
-      offerAmount,
-      web3AuthProvider
-    );
-
-    if (!contractResult.success) {
-      return NextResponse.json(
-        { error: contractResult.error || "Failed to accept deal on contract" },
-        { status: 500 }
-      );
-    }
+    // Note: Smart contract interaction is handled client-side
+    // This endpoint only updates the database state
 
     // Update game in database
     const { error: updateError } = await supabaseAdmin
@@ -121,13 +113,13 @@ export async function POST(
     // Create move record
     await createMove(gameId, authResult.user_id, "ACCEPT_DEAL", {
       offer_amount: offerAmount,
-      contract_tx_hash: contractResult.txHash,
+      contract_tx_hash: txHash,
     });
 
     return NextResponse.json({
       success: true,
       message: "Deal accepted successfully!",
-      txHash: contractResult.txHash,
+      txHash: txHash,
       finalAmount: parseInt(offerAmount) / 10000, // Convert to cents for display
     });
   } catch (error) {

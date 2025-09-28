@@ -1,5 +1,9 @@
-import { burnBoxOnContract, getServerContractGameState } from "@/lib/dealMasterContract";
-import { createMove, getGameWithDetails, supabaseAdmin } from "@/lib/supabaseAdminClient";
+import { getServerContractGameState } from "@/lib/dealMasterContract";
+import {
+  createMove,
+  getGameWithDetails,
+  supabaseAdmin,
+} from "@/lib/supabaseAdminClient";
 import { verifyAuthHeader } from "@/lib/web3authServer";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -30,7 +34,7 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { idx, web3AuthProvider } = body;
+    const { idx, txHash } = body;
 
     // Validate box index (0-7 for 8 boxes)
     if (typeof idx !== "number" || idx < 0 || idx > 7) {
@@ -40,9 +44,9 @@ export async function POST(
       );
     }
 
-    if (!web3AuthProvider) {
+    if (!txHash) {
       return NextResponse.json(
-        { error: "Web3Auth provider is required" },
+        { error: "Transaction hash is required" },
         { status: 400 }
       );
     }
@@ -106,26 +110,15 @@ export async function POST(
       );
     }
 
-    // Call smart contract function
-    const contractResult = await burnBoxOnContract(
-      gameData.contract_game_id!,
-      idx,
-      web3AuthProvider
-    );
-
-    if (!contractResult.success) {
-      return NextResponse.json(
-        { error: contractResult.error || "Failed to burn box on contract" },
-        { status: 500 }
-      );
-    }
+    // Note: Smart contract interaction is handled client-side
+    // This endpoint only updates the database state
 
     // Update the card as burned in database
     const { error: cardUpdateError } = await supabaseAdmin
       .from("cards")
       .update({
         burned: true,
-        revealed: true // Contract games reveal the value when burned
+        revealed: true, // Contract games reveal the value when burned
       })
       .eq("game_id", gameId)
       .eq("idx", idx);
@@ -141,15 +134,20 @@ export async function POST(
     // Create move record
     await createMove(gameId, authResult.user_id, "BURN_BOX", {
       box_idx: idx,
-      contract_tx_hash: contractResult.txHash,
+      contract_tx_hash: txHash,
     });
 
     // Get updated contract state to check if game is finished
     try {
-      const contractState = await getServerContractGameState(gameData.contract_game_id!);
+      const contractState = await getServerContractGameState(
+        gameData.contract_game_id!
+      );
 
       // Check if game has ended (round 6 reached or game no longer active)
-      if (contractState && (!contractState.gameActive || contractState.round >= 6)) {
+      if (
+        contractState &&
+        (!contractState.gameActive || contractState.round >= 6)
+      ) {
         // Update game status to indicate it's ready for final selection
         await supabaseAdmin
           .from("games")
@@ -163,7 +161,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: `Box ${idx + 1} burned!`,
-      txHash: contractResult.txHash,
+      txHash: txHash,
       burnedBox: idx,
       cardValue: targetCard.value_cents,
     });

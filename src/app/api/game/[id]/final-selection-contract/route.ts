@@ -1,5 +1,8 @@
-import { finalSelectionOnContract } from "@/lib/dealMasterContract";
-import { createMove, getGameWithDetails, supabaseAdmin } from "@/lib/supabaseAdminClient";
+import {
+  createMove,
+  getGameWithDetails,
+  supabaseAdmin,
+} from "@/lib/supabaseAdminClient";
 import { verifyAuthHeader } from "@/lib/web3authServer";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -30,7 +33,7 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { keepOriginalBox, web3AuthProvider } = body;
+    const { keepOriginalBox, txHash } = body;
 
     if (typeof keepOriginalBox !== "boolean") {
       return NextResponse.json(
@@ -39,9 +42,9 @@ export async function POST(
       );
     }
 
-    if (!web3AuthProvider) {
+    if (!txHash) {
       return NextResponse.json(
-        { error: "Web3Auth provider is required" },
+        { error: "Transaction hash is required" },
         { status: 400 }
       );
     }
@@ -85,27 +88,18 @@ export async function POST(
     }
 
     // Verify we have exactly 6 burned boxes and 2 remaining
-    const burnedCount = gameData.cards.filter(card => card.burned).length;
+    const burnedCount = gameData.cards.filter((card) => card.burned).length;
     if (burnedCount !== 6) {
       return NextResponse.json(
-        { error: `Must burn exactly 6 boxes before final selection. Currently burned: ${burnedCount}` },
+        {
+          error: `Must burn exactly 6 boxes before final selection. Currently burned: ${burnedCount}`,
+        },
         { status: 400 }
       );
     }
 
-    // Call smart contract function
-    const contractResult = await finalSelectionOnContract(
-      gameData.contract_game_id!,
-      keepOriginalBox,
-      web3AuthProvider
-    );
-
-    if (!contractResult.success) {
-      return NextResponse.json(
-        { error: contractResult.error || "Failed to make final selection on contract" },
-        { status: 500 }
-      );
-    }
+    // Note: Smart contract interaction is handled client-side
+    // This endpoint only updates the database state
 
     // Determine which box was chosen and its value
     let finalBoxIndex: number;
@@ -113,9 +107,14 @@ export async function POST(
       finalBoxIndex = gameData.player_case!;
     } else {
       // Find the other unburned box
-      const unburned = gameData.cards.filter(card => !card.burned && card.idx !== gameData.player_case);
+      const unburned = gameData.cards.filter(
+        (card) => !card.burned && card.idx !== gameData.player_case
+      );
       if (unburned.length !== 1) {
-        console.error("Expected exactly 1 unburned box (excluding player's), found:", unburned.length);
+        console.error(
+          "Expected exactly 1 unburned box (excluding player's), found:",
+          unburned.length
+        );
         return NextResponse.json(
           { error: "Invalid game state: incorrect number of unburned boxes" },
           { status: 500 }
@@ -124,7 +123,7 @@ export async function POST(
       finalBoxIndex = unburned[0].idx;
     }
 
-    const finalCard = gameData.cards.find(card => card.idx === finalBoxIndex);
+    const finalCard = gameData.cards.find((card) => card.idx === finalBoxIndex);
     if (!finalCard) {
       return NextResponse.json(
         { error: "Final card not found" },
@@ -162,13 +161,13 @@ export async function POST(
       keep_original_box: keepOriginalBox,
       final_box_index: finalBoxIndex,
       final_amount: finalCard.value_cents,
-      contract_tx_hash: contractResult.txHash,
+      contract_tx_hash: txHash,
     });
 
     return NextResponse.json({
       success: true,
-      message: `Final selection made! ${keepOriginalBox ? 'Kept original box' : 'Switched to other box'}`,
-      txHash: contractResult.txHash,
+      message: `Final selection made! ${keepOriginalBox ? "Kept original box" : "Switched to other box"}`,
+      txHash: txHash,
       finalBoxIndex,
       finalAmount: finalCard.value_cents,
       keptOriginal: keepOriginalBox,
